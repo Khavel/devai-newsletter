@@ -54,7 +54,20 @@ def _publish_beehiiv(
             },
             json=payload,
         )
-        if resp.status_code not in (200, 201):
+        if resp.status_code == 403:
+            error_body = resp.json() if resp.headers.get("content-type", "").startswith("application/json") else resp.text
+            errors = error_body.get("errors", []) if isinstance(error_body, dict) else []
+            code = errors[0].get("code", "") if errors else ""
+            if code == "SEND_API_NOT_ENTERPRISE_PLAN":
+                logger.warning(
+                    "Beehiiv Send API requires Enterprise plan. "
+                    "The newsletter HTML was generated successfully — upload it manually at app.beehiiv.com, "
+                    "or switch to MailerLite (free API) for automated publishing."
+                )
+                return None
+            logger.error(f"Beehiiv API error 403: {resp.text[:500]}")
+            resp.raise_for_status()
+        elif resp.status_code not in (200, 201):
             logger.error(f"Beehiiv API error {resp.status_code}: {resp.text[:500]}")
             resp.raise_for_status()
         data = resp.json()
