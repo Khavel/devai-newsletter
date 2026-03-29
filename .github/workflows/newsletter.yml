@@ -2,10 +2,9 @@ name: DevAI Newsletter Pipeline
 
 on:
   schedule:
-    # Tuesday 07:00 UTC = 09:00 CEST — lanzamientos del lunes
+    # Tuesday 07:00 UTC = 09:00 CEST — best open rates for tech newsletters,
+    # captures Monday's AI launches and announcements
     - cron: '0 7 * * 2'
-    # Friday 07:00 UTC = 09:00 CEST — resumen semanal
-    - cron: '0 7 * * 5'
   workflow_dispatch:
     inputs:
       mode:
