@@ -11,6 +11,7 @@ import webbrowser
 from pathlib import Path
 
 import httpx
+from bs4 import BeautifulSoup
 
 from .utils import RateLimiter
 
@@ -103,6 +104,17 @@ def _publish_mailerlite(
 # Ghost publish
 # ---------------------------------------------------------------------------
 
+def _extract_email_body(full_html: str) -> str:
+    """Strip <html>/<head>/<body> wrapper from email HTML so it embeds cleanly in Ghost."""
+    soup = BeautifulSoup(full_html, "lxml")
+    styles = "".join(str(s) for s in soup.find_all("style"))
+    body = soup.find("body")
+    if not body:
+        return full_html
+    body_style = body.get("style", "margin:0;padding:0;background-color:#f1f5f9")
+    return f'{styles}<div style="{body_style}">{body.decode_contents()}</div>'
+
+
 def _ghost_jwt(admin_api_key: str) -> str:
     """Generate a short-lived JWT for the Ghost Admin API (no external lib needed)."""
     import base64
@@ -149,21 +161,36 @@ def _publish_ghost(
     title = f"{name} — {human_date}"
     slug  = f"newsletter-{date_str}"
 
-    # Embed the newsletter HTML verbatim in a Ghost HTML card (mobiledoc)
+    # Extract only <body> content — avoids nested-document width explosion in Ghost
+    email_body = _extract_email_body(html_content)
+
+    # Embed in a Ghost HTML card (mobiledoc)
     mobiledoc = json.dumps({
         "version": "0.3.1",
         "atoms": [],
-        "cards": [["html", {"html": html_content}]],
+        "cards": [["html", {"html": email_body}]],
         "markups": [],
         "sections": [[10, 0]],
     })
 
+    # Per-post CSS: hide Ghost post header/meta, remove top padding
+    post_css = (
+        "<style>"
+        ".gh-article-header{display:none!important}"
+        ".gh-article-meta{display:none!important}"
+        ".gh-content.gh-canvas{padding-top:0!important}"
+        ".gh-article{padding-top:0!important}"
+        "</style>"
+    )
+
     post_payload = {
         "posts": [{
-            "title":     title,
-            "slug":      slug,
-            "status":    "published",
-            "mobiledoc": mobiledoc,
+            "title":              title,
+            "slug":               slug,
+            "status":             "published",
+            "mobiledoc":          mobiledoc,
+            "codeinjection_head": post_css,
+            "tags":               [{"name": "Newsletter", "slug": "newsletter"}],
         }]
     }
 
