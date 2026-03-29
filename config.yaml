@@ -1,0 +1,59 @@
+newsletter:
+  name: "DevAI"
+  tagline: "Herramientas de IA para devs, en español"
+  author: "Alex"
+  frequency: "weekly"
+
+sources:
+  rss:
+    - url: "https://blog.anthropic.com/rss"
+      name: "Anthropic"
+    - url: "https://openai.com/blog/rss"
+      name: "OpenAI"
+    - url: "https://blog.google/technology/ai/rss/"
+      name: "Google AI"
+    - url: "https://github.blog/feed/"
+      name: "GitHub"
+    - url: "https://devblogs.microsoft.com/ai/feed/"
+      name: "Microsoft AI"
+    - url: "https://code.visualstudio.com/feed.xml"
+      name: "VS Code"
+
+  hackernews:
+    keywords:
+      - "claude code"
+      - "cursor ai"
+      - "github copilot"
+      - "ai coding"
+      - "mcp server"
+      - "agentic"
+      - "vibe coding"
+      - "cline"
+      - "windsurf"
+      - "codex"
+    min_score: 50
+
+  reddit:
+    subreddits:
+      - "ClaudeAI"
+      - "cursor"
+      - "LocalLLaMA"
+      - "ChatGPTPro"
+    sort: "top"
+    time: "week"
+    min_upvotes: 100
+
+  github_trending:
+    topics:
+      - "ai-coding"
+      - "developer-tools"
+      - "llm"
+      - "mcp"
+
+claude:
+  model: "claude-sonnet-4-20250514"
+  max_tokens_curation: 2000
+  max_tokens_rewrite: 500
+
+publishing:
+  platform: "beehiiv"

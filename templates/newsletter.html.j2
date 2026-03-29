@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <!--[if mso]>
+  <noscript><xml><o:OfficeDocumentSettings>
+    <o:PixelsPerInch>96</o:PixelsPerInch>
+  </o:OfficeDocumentSettings></xml></noscript>
+  <![endif]-->
+  <title>{{ newsletter.name }} &mdash; {{ date_display }}</title>
+  <style type="text/css">
+    body { margin: 0; padding: 0; background-color: #f1f5f9; }
+    img  { border: 0; outline: none; text-decoration: none; }
+    a    { color: #2563eb; }
+    @media only screen and (max-width: 620px) {
+      .outer   { padding: 12px 0 !important; }
+      .wrapper { width: 100% !important; border-radius: 0 !important; }
+      .pad     { padding-left: 20px !important; padding-right: 20px !important; }
+    }
+  </style>
+</head>
+<body style="margin:0;padding:0;background-color:#f1f5f9;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
+
+  <!-- Gmail preview text (hidden) -->
+  <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;color:#f1f5f9;">
+    {{ intro[:110] | replace('<', '') | replace('>', '') }}&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!--  OUTER WRAPPER                                              -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"
+         style="background-color:#f1f5f9;">
+    <tr>
+      <td align="center" class="outer" style="padding:28px 12px;">
+
+        <!-- Main container (600px) -->
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0"
+               width="600" class="wrapper"
+               style="max-width:600px;background-color:#ffffff;border-radius:8px;
+                      box-shadow:0 1px 4px rgba(0,0,0,.12);overflow:hidden;">
+
+          <!-- ┌──────────────────────────────────────────────────┐ -->
+          <!-- │  HEADER                                           │ -->
+          <!-- └──────────────────────────────────────────────────┘ -->
+          <tr>
+            <td style="background-color:#0f172a;padding:28px 40px;border-radius:8px 8px 0 0;"
+                class="pad">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                <tr>
+                  <td valign="middle">
+                    <!-- Logo: simple SVG wordmark -->
+                    <div style="font-family:'Courier New',Courier,monospace;font-size:26px;
+                                font-weight:700;color:#f8fafc;letter-spacing:-0.5px;line-height:1.2;">
+                      {{ newsletter.name }}
+                    </div>
+                    <div style="font-family:'Courier New',Courier,monospace;font-size:11px;
+                                color:#64748b;margin-top:5px;letter-spacing:0.4px;">
+                      {{ newsletter.tagline }}
+                    </div>
+                  </td>
+                  <td align="right" valign="top" style="white-space:nowrap;padding-left:16px;">
+                    <div style="font-family:'Courier New',Courier,monospace;font-size:11px;
+                                color:#475569;text-align:right;line-height:1.7;">
+                      {{ date_display }}<br>
+                      <span style="color:#334155;">Edici&oacute;n semanal</span>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- ┌──────────────────────────────────────────────────┐ -->
+          <!-- │  INTRO                                            │ -->
+          <!-- └──────────────────────────────────────────────────┘ -->
+          <tr>
+            <td style="padding:28px 40px 24px 40px;border-bottom:2px solid #e2e8f0;"
+                class="pad">
+              <p style="font-family:Georgia,'Times New Roman',serif;font-size:15px;
+                        line-height:1.8;color:#374151;margin:0;">
+                {{ intro }}
+              </p>
+            </td>
+          </tr>
+
+          <!-- ┌──────────────────────────────────────────────────┐ -->
+          <!-- │  ARTICLES                                         │ -->
+          <!-- └──────────────────────────────────────────────────┘ -->
+          {% for article in articles %}
+          <!-- Article {{ loop.index }} -->
+          <tr>
+            <td style="padding:22px 40px 0 40px;" class="pad">
+              <!-- Category badge + source -->
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="background-color:{{ article.badge_color }};border-radius:3px;
+                              padding:3px 9px;vertical-align:middle;">
+                    <span style="font-family:'Courier New',Courier,monospace;font-size:10px;
+                                 font-weight:700;color:#ffffff;text-transform:uppercase;
+                                 letter-spacing:0.8px;">
+                      {{ article.category_label }}
+                    </span>
+                  </td>
+                  <td style="padding-left:10px;vertical-align:middle;">
+                    <span style="font-family:'Courier New',Courier,monospace;font-size:11px;
+                                 color:#94a3b8;">
+                      {{ article.source }}
+                    </span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:10px 40px 22px 40px;border-bottom:1px solid #f1f5f9;" class="pad">
+              <div style="font-family:Georgia,'Times New Roman',serif;font-size:14px;
+                          color:#1e293b;">
+                {{ article.content_html | safe }}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+
+          {% if repo_of_week %}
+          <!-- ┌──────────────────────────────────────────────────┐ -->
+          <!-- │  REPO DE LA SEMANA                                │ -->
+          <!-- └──────────────────────────────────────────────────┘ -->
+          <tr>
+            <td style="background-color:#f8fafc;padding:22px 40px 0 40px;
+                        border-top:2px solid #e2e8f0;" class="pad">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="background-color:#0ea5e9;border-radius:3px;padding:3px 9px;">
+                    <span style="font-family:'Courier New',Courier,monospace;font-size:10px;
+                                 font-weight:700;color:#ffffff;text-transform:uppercase;
+                                 letter-spacing:0.8px;">
+                      &#11088; Repo de la semana
+                    </span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color:#f8fafc;padding:10px 40px 28px 40px;
+                        border-bottom:2px solid #e2e8f0;" class="pad">
+              <div style="font-family:Georgia,'Times New Roman',serif;font-size:14px;
+                          color:#1e293b;">
+                {{ repo_of_week.content_html | safe }}
+              </div>
+            </td>
+          </tr>
+          {% endif %}
+
+          <!-- ┌──────────────────────────────────────────────────┐ -->
+          <!-- │  FOOTER                                           │ -->
+          <!-- └──────────────────────────────────────────────────┘ -->
+          <tr>
+            <td style="background-color:#0f172a;padding:24px 40px;
+                        border-radius:0 0 8px 8px;" class="pad">
+              <p style="font-family:'Courier New',Courier,monospace;font-size:11px;
+                        color:#64748b;margin:0 0 10px 0;line-height:1.7;">
+                {{ newsletter.name }} &mdash; {{ newsletter.tagline }}<br>
+                Escrita por {{ newsletter.author }} cada {{ newsletter.frequency_label }}
+              </p>
+              <p style="font-family:'Courier New',Courier,monospace;font-size:11px;
+                        margin:0;line-height:1.6;">
+                <a href="#" style="color:#94a3b8;text-decoration:none;">Ediciones anteriores</a>
+                &nbsp;&middot;&nbsp;
+                <a href="mailto:devai@example.com"
+                   style="color:#94a3b8;text-decoration:none;">Responder al editor</a>
+                &nbsp;&middot;&nbsp;
+                <a href="#unsubscribe"
+                   style="color:#94a3b8;text-decoration:none;">Cancelar suscripci&oacute;n</a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+        <!-- /main container -->
+
+      </td>
+    </tr>
+  </table>
+  <!-- /outer wrapper -->
+
+</body>
+</html>

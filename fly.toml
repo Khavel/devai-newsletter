@@ -1,0 +1,17 @@
+app = "devai-newsletter"
+primary_region = "mad"  # Madrid data centre — closest to you
+
+[build]
+
+# Single shared-CPU micro instance — costs ~$1-2/month.
+# The pipeline runs ~5 minutes per week, but the container stays running
+# (supercronic sits idle the rest of the time, using ~10 MB RAM).
+[[vm]]
+  memory = "256mb"
+  cpu_kind = "shared"
+  cpus = 1
+
+# No HTTP service — this is a pure background worker.
+# Fly will keep exactly one machine alive running supercronic.
+[processes]
+  app = "supercronic /app/crontab"

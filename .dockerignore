@@ -1,0 +1,20 @@
+# Secrets — NEVER bake into the image
+.env
+
+# Generated at runtime
+data/
+output/
+logs/
+
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Dev/OS
+.git/
+.gitignore
+*.md
+.DS_Store
+Thumbs.db

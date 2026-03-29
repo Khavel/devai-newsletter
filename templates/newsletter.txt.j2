@@ -1,0 +1,28 @@
+{{ newsletter.name | upper }} — {{ date_display }}
+{{ newsletter.tagline }}
+{{ "=" * 60 }}
+
+{{ intro }}
+
+{% for article in articles %}
+{{ "─" * 60 }}
+[{{ article.category_label | upper }}]  {{ article.source }}
+
+{{ article.content_plain }}
+
+{% endfor %}
+{% if repo_of_week %}
+{{ "═" * 60 }}
+★  REPO DE LA SEMANA
+
+{{ repo_of_week.content_plain }}
+
+{{ "═" * 60 }}
+{% else %}
+{{ "=" * 60 }}
+{% endif %}
+
+{{ newsletter.name }} — Escrita por {{ newsletter.author }}
+Ediciones anteriores : [enlace]
+Responder al editor  : devai@example.com
+Cancelar suscripción : [enlace de baja]

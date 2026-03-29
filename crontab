@@ -1,0 +1,4 @@
+# DevAI Newsletter — weekly cron schedule
+# Every Sunday at 07:00 UTC = 09:00 CEST (summer) / 08:00 CET (winter)
+# To run at exactly 09:00 local year-round, update this when clocks change.
+0 7 * * 0 cd /app && python run.py --draft >> /proc/1/fd/1 2>&1

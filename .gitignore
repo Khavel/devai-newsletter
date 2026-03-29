@@ -1,0 +1,22 @@
+# Secrets
+.env
+
+# Pipeline data (gitignored, generated at runtime)
+data/
+output/
+logs/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+.Python
+
+# OS
+.DS_Store
+Thumbs.db
