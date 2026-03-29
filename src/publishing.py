@@ -28,16 +28,17 @@ _MAILERLITE_API = "https://connect.mailerlite.com/api"
 def _publish_mailerlite(
     html_content: str, config: dict, date_str: str
 ) -> str | None:
-    """Create a draft campaign in MailerLite. Returns the campaign URL, or None if skipped."""
+    """Create and auto-send a campaign in MailerLite. Returns the campaign URL, or None if skipped."""
     api_key      = os.getenv("MAILERLITE_API_KEY", "").strip()
     sender_email = os.getenv("MAILERLITE_SENDER_EMAIL", "").strip()
     sender_name  = os.getenv("MAILERLITE_SENDER_NAME", "DevAI").strip()
+    group_id     = os.getenv("MAILERLITE_GROUP_ID", "").strip()   # subscriber list ID
 
     if not api_key:
-        logger.warning("MAILERLITE_API_KEY not set — skipping MailerLite draft.")
+        logger.warning("MAILERLITE_API_KEY not set — skipping MailerLite.")
         return None
     if not sender_email:
-        logger.warning("MAILERLITE_SENDER_EMAIL not set — skipping MailerLite draft.")
+        logger.warning("MAILERLITE_SENDER_EMAIL not set — skipping MailerLite.")
         return None
 
     nl_cfg  = config.get("newsletter", {})
@@ -48,18 +49,25 @@ def _publish_mailerlite(
     try:
         from datetime import datetime
         dt = datetime.strptime(date_str, "%Y-%m-%d")
-        human_date = dt.strftime("%-d %b %Y").lower()   # Linux
-    except ValueError:
         try:
-            human_date = dt.strftime("%#d %b %Y").lower()  # Windows
-        except Exception:
-            human_date = date_str
+            human_date = dt.strftime("%-d %b %Y").lower()   # Linux
+        except ValueError:
+            human_date = dt.strftime("%#d %b %Y").lower()   # Windows
+    except Exception:
+        human_date = date_str
 
     subject = f"{name} — {human_date}"
     if tagline:
         subject += f" · {tagline}"
 
-    payload = {
+    ml_headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type":  "application/json",
+        "Accept":        "application/json",
+    }
+
+    # --- 1. Create campaign ---
+    payload: dict = {
         "name": f"{name} — {date_str}",
         "type": "regular",
         "emails": [
@@ -71,32 +79,55 @@ def _publish_mailerlite(
             }
         ],
     }
+    if group_id:
+        payload["groups"] = [group_id]
 
     _rl.wait()
     with httpx.Client(timeout=30) as client:
         resp = client.post(
             f"{_MAILERLITE_API}/campaigns",
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type":  "application/json",
-                "Accept":        "application/json",
-            },
+            headers=ml_headers,
             json=payload,
         )
         if resp.status_code not in (200, 201):
-            logger.error(f"MailerLite API error {resp.status_code}: {resp.text[:500]}")
+            logger.error(f"MailerLite create error {resp.status_code}: {resp.text[:500]}")
             resp.raise_for_status()
         data = resp.json()
 
     campaign_id  = data.get("data", {}).get("id", "unknown")
     campaign_url = f"https://dashboard.mailerlite.com/campaigns/{campaign_id}/edit"
-    logger.info(f"MailerLite draft created: {campaign_url}")
+    logger.info(f"MailerLite campaign created: {campaign_id}")
 
-    print(f"\n{'='*60}")
-    print(f"[OK] Draft creado en MailerLite!")
-    print(f"   Campaign ID : {campaign_id}")
-    print(f"   Revisar     : {campaign_url}")
-    print(f"{'='*60}\n")
+    # --- 2. Auto-send (only if group_id is configured) ---
+    if group_id and campaign_id != "unknown":
+        _rl.wait()
+        with httpx.Client(timeout=30) as client:
+            send_resp = client.post(
+                f"{_MAILERLITE_API}/campaigns/{campaign_id}/schedule",
+                headers=ml_headers,
+                json={"delivery": "instant"},
+            )
+        if send_resp.status_code in (200, 201):
+            logger.info(f"MailerLite campaign sent instantly: {campaign_id}")
+            print(f"\n{'='*60}")
+            print(f"[OK] Newsletter enviada en MailerLite!")
+            print(f"   Campaign ID : {campaign_id}")
+            print(f"   URL         : {campaign_url}")
+            print(f"{'='*60}\n")
+        else:
+            logger.warning(f"MailerLite send failed {send_resp.status_code}: {send_resp.text[:300]}")
+            print(f"\n{'='*60}")
+            print(f"[OK] Draft creado en MailerLite (envío manual necesario)")
+            print(f"   Revisar: {campaign_url}")
+            print(f"{'='*60}\n")
+    else:
+        # No group configured — leave as draft
+        print(f"\n{'='*60}")
+        print(f"[OK] Draft creado en MailerLite (sin grupo configurado)")
+        print(f"   Campaign ID : {campaign_id}")
+        print(f"   Revisar     : {campaign_url}")
+        print(f"{'='*60}\n")
+
     return campaign_url
 
 
@@ -245,9 +276,14 @@ def _notify_telegram(
     lines = [f"<b>{name} Newsletter — {date_str}</b>\n"]
 
     if ghost_url:
-        lines.append(f"Web publicada: {ghost_url}")
+        lines.append(f"🌐 Web: {ghost_url}")
     if mailerlite_url:
-        lines.append(f"Draft MailerLite listo — revisar y programar: {mailerlite_url}")
+        group_id = os.getenv("MAILERLITE_GROUP_ID", "").strip()
+        if group_id:
+            lines.append(f"✉️ Email enviado automáticamente")
+            lines.append(f"   Ver campaña: {mailerlite_url}")
+        else:
+            lines.append(f"📋 Draft MailerLite — revisar y enviar: {mailerlite_url}")
     if not ghost_url and not mailerlite_url:
         lines.append(f"Pipeline completado. HTML: <code>{html_file.name}</code>")
 

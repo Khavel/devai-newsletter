@@ -42,6 +42,7 @@ jobs:
           MAILERLITE_API_KEY: ${{ secrets.MAILERLITE_API_KEY }}
           MAILERLITE_SENDER_EMAIL: ${{ secrets.MAILERLITE_SENDER_EMAIL }}
           MAILERLITE_SENDER_NAME: ${{ secrets.MAILERLITE_SENDER_NAME }}
+          MAILERLITE_GROUP_ID: ${{ secrets.MAILERLITE_GROUP_ID }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python run.py --draft
