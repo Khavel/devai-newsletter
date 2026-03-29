@@ -40,12 +40,13 @@ def _parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def _check_env(mode: str) -> list[str]:
-    """Return list of missing required env vars for the chosen mode."""
-    required = ["ANTHROPIC_API_KEY"]
-    if mode == "draft":
-        required += ["BEEHIIV_API_KEY", "BEEHIIV_PUBLICATION_ID"]
-    return [k for k in required if not os.getenv(k)]
+def _check_env(mode: str) -> list[str]:  # noqa: ARG001
+    """Return list of missing required env vars.
+
+    ANTHROPIC_API_KEY is always required.
+    BEEHIIV_* are optional — publishing.py warns and skips if absent.
+    """
+    return [k for k in ["ANTHROPIC_API_KEY"] if not os.getenv(k)]
 
 
 def main() -> int:
