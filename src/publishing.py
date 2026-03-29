@@ -19,15 +19,17 @@ _rl = RateLimiter(calls_per_second=1.0)
 
 def _publish_beehiiv(
     html_content: str, txt_content: str, config: dict, date_str: str
-) -> None:
+) -> str | None:
+    """Push a draft to Beehiiv. Returns the post URL, or None if skipped/failed."""
     api_key = os.getenv("BEEHIIV_API_KEY", "").strip()
     pub_id = os.getenv("BEEHIIV_PUBLICATION_ID", "").strip()
 
     if not api_key or not pub_id:
-        raise EnvironmentError(
-            "BEEHIIV_API_KEY and BEEHIIV_PUBLICATION_ID must be set in .env "
-            "to use --draft mode."
+        logger.warning(
+            "BEEHIIV_API_KEY not set — skipping Beehiiv draft. "
+            "Add the key to publish automatically."
         )
+        return None
 
     nl_cfg = config.get("newsletter", {})
     title = f"{nl_cfg.get('name', 'DevAI')} — {date_str}"
@@ -66,13 +68,16 @@ def _publish_beehiiv(
     print(f"   Post ID : {post_id}")
     print(f"   Revisar : {post_url}")
     print(f"{'='*60}\n")
+    return post_url
 
 
 # ---------------------------------------------------------------------------
 # Telegram notification
 # ---------------------------------------------------------------------------
 
-def _notify_telegram(html_file: Path, config: dict, date_str: str) -> None:
+def _notify_telegram(
+    html_file: Path, config: dict, date_str: str, beehiiv_url: str | None = None
+) -> None:
     token = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
     chat_id = os.getenv("TELEGRAM_CHAT_ID", "").strip()
 
@@ -83,13 +88,19 @@ def _notify_telegram(html_file: Path, config: dict, date_str: str) -> None:
     nl_cfg = config.get("newsletter", {})
     name = nl_cfg.get("name", "DevAI")
 
-    text = (
-        f"<b>{name} Newsletter — {date_str}</b>\n\n"
-        f"Pipeline completado.\n"
-        f"Revisa el preview en tu navegador y ejecuta:\n"
-        f"<code>python run.py --draft</code>\n\n"
-        f"HTML: <code>{html_file.name}</code>"
-    )
+    if beehiiv_url:
+        text = (
+            f"<b>{name} Newsletter — {date_str}</b>\n\n"
+            f"Draft publicado en Beehiiv.\n"
+            f"Revisar y programar: {beehiiv_url}"
+        )
+    else:
+        text = (
+            f"<b>{name} Newsletter — {date_str}</b>\n\n"
+            f"Pipeline completado (Beehiiv no configurado).\n"
+            f"HTML: <code>{html_file.name}</code>\n\n"
+            f"Cuando tengas la API key: <code>python run.py --draft</code>"
+        )
 
     _rl.wait()
     try:
@@ -117,7 +128,8 @@ def run(config: dict, html_file: Path, txt_file: Path, mode: str) -> None:
 
     if mode == "draft":
         logger.info("Publishing to Beehiiv as draft…")
-        _publish_beehiiv(html_content, txt_content, config, date_str)
+        beehiiv_url = _publish_beehiiv(html_content, txt_content, config, date_str)
+        _notify_telegram(html_file, config, date_str, beehiiv_url=beehiiv_url)
 
     else:  # preview (default)
         file_uri = html_file.resolve().as_uri()
