@@ -1,7 +1,12 @@
-"""Phase 5 — Publishing: open browser preview or push draft to MailerLite."""
+"""Phase 5 — Publishing: open browser preview, push draft to MailerLite, publish to Ghost."""
 
+import hashlib
+import hmac
+import json
 import logging
 import os
+import struct
+import time
 import webbrowser
 from pathlib import Path
 
@@ -95,11 +100,110 @@ def _publish_mailerlite(
 
 
 # ---------------------------------------------------------------------------
+# Ghost publish
+# ---------------------------------------------------------------------------
+
+def _ghost_jwt(admin_api_key: str) -> str:
+    """Generate a short-lived JWT for the Ghost Admin API (no external lib needed)."""
+    import base64
+
+    key_id, secret_hex = admin_api_key.split(":")
+    secret = bytes.fromhex(secret_hex)
+
+    now = int(time.time())
+    header  = {"alg": "HS256", "typ": "JWT", "kid": key_id}
+    payload = {"iat": now, "exp": now + 300, "aud": "/admin/"}
+
+    def b64url(data: bytes) -> str:
+        return base64.urlsafe_b64encode(data).rstrip(b"=").decode()
+
+    h = b64url(json.dumps(header,  separators=(",", ":")).encode())
+    p = b64url(json.dumps(payload, separators=(",", ":")).encode())
+    sig = hmac.new(secret, f"{h}.{p}".encode(), hashlib.sha256).digest()
+    return f"{h}.{p}.{b64url(sig)}"
+
+
+def _publish_ghost(
+    html_content: str, config: dict, date_str: str
+) -> str | None:
+    """Publish newsletter as a Ghost post. Returns the post URL, or None if skipped."""
+    admin_api_key = os.getenv("GHOST_ADMIN_API_KEY", "").strip()
+    ghost_url     = os.getenv("GHOST_URL", "").strip().rstrip("/")
+
+    if not admin_api_key or not ghost_url:
+        logger.warning("GHOST_ADMIN_API_KEY or GHOST_URL not set — skipping Ghost publish.")
+        return None
+
+    nl_cfg  = config.get("newsletter", {})
+    name    = nl_cfg.get("name", "DevAI Semanal")
+
+    # Human-readable date
+    try:
+        from datetime import datetime
+        dt = datetime.strptime(date_str, "%Y-%m-%d")
+        day = str(dt.day)
+        human_date = f"{day} {dt.strftime('%b %Y').lower()}"
+    except Exception:
+        human_date = date_str
+
+    title = f"{name} — {human_date}"
+    slug  = f"newsletter-{date_str}"
+
+    # Embed the newsletter HTML verbatim in a Ghost HTML card (mobiledoc)
+    mobiledoc = json.dumps({
+        "version": "0.3.1",
+        "atoms": [],
+        "cards": [["html", {"html": html_content}]],
+        "markups": [],
+        "sections": [[10, 0]],
+    })
+
+    post_payload = {
+        "posts": [{
+            "title":     title,
+            "slug":      slug,
+            "status":    "published",
+            "mobiledoc": mobiledoc,
+        }]
+    }
+
+    token = _ghost_jwt(admin_api_key)
+    headers = {
+        "Authorization":  f"Ghost {token}",
+        "Content-Type":   "application/json",
+        "Accept-Version": "v5.0",
+    }
+
+    _rl.wait()
+    with httpx.Client(timeout=30) as client:
+        resp = client.post(
+            f"{ghost_url}/ghost/api/admin/posts/",
+            headers=headers,
+            json=post_payload,
+        )
+        if resp.status_code not in (200, 201):
+            logger.error(f"Ghost API error {resp.status_code}: {resp.text[:500]}")
+            resp.raise_for_status()
+        data = resp.json()
+
+    post_url = data["posts"][0]["url"]
+    logger.info(f"Ghost post published: {post_url}")
+
+    print(f"\n{'='*60}")
+    print(f"[OK] Newsletter publicada en Ghost!")
+    print(f"   URL : {post_url}")
+    print(f"{'='*60}\n")
+    return post_url
+
+
+# ---------------------------------------------------------------------------
 # Telegram notification
 # ---------------------------------------------------------------------------
 
 def _notify_telegram(
-    html_file: Path, config: dict, date_str: str, publish_url: str | None = None
+    html_file: Path, config: dict, date_str: str,
+    mailerlite_url: str | None = None,
+    ghost_url: str | None = None,
 ) -> None:
     token   = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
     chat_id = os.getenv("TELEGRAM_CHAT_ID", "").strip()
@@ -111,19 +215,16 @@ def _notify_telegram(
     nl_cfg = config.get("newsletter", {})
     name   = nl_cfg.get("name", "DevAI")
 
-    if publish_url:
-        text = (
-            f"<b>{name} Newsletter — {date_str}</b>\n\n"
-            f"Draft listo en MailerLite.\n"
-            f"Revisar y programar: {publish_url}"
-        )
-    else:
-        text = (
-            f"<b>{name} Newsletter — {date_str}</b>\n\n"
-            f"Pipeline completado (MailerLite no configurado).\n"
-            f"HTML generado: <code>{html_file.name}</code>\n\n"
-            f"Configura MAILERLITE_API_KEY y MAILERLITE_SENDER_EMAIL para publicar automaticamente."
-        )
+    lines = [f"<b>{name} Newsletter — {date_str}</b>\n"]
+
+    if ghost_url:
+        lines.append(f"Web publicada: {ghost_url}")
+    if mailerlite_url:
+        lines.append(f"Draft MailerLite listo — revisar y programar: {mailerlite_url}")
+    if not ghost_url and not mailerlite_url:
+        lines.append(f"Pipeline completado. HTML: <code>{html_file.name}</code>")
+
+    text = "\n".join(lines)
 
     _rl.wait()
     try:
@@ -149,9 +250,14 @@ def run(config: dict, html_file: Path, txt_file: Path, mode: str) -> None:
     date_str     = html_file.stem.replace("newsletter_", "")
 
     if mode == "draft":
-        logger.info("Publishing to MailerLite as draft campaign…")
-        publish_url = _publish_mailerlite(html_content, config, date_str)
-        _notify_telegram(html_file, config, date_str, publish_url=publish_url)
+        logger.info("Publishing to Ghost and MailerLite…")
+        ghost_post_url    = _publish_ghost(html_content, config, date_str)
+        mailerlite_url    = _publish_mailerlite(html_content, config, date_str)
+        _notify_telegram(
+            html_file, config, date_str,
+            mailerlite_url=mailerlite_url,
+            ghost_url=ghost_post_url,
+        )
 
     else:  # preview (default)
         file_uri = html_file.resolve().as_uri()

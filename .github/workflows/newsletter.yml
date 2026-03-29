@@ -37,6 +37,8 @@ jobs:
       - name: Run pipeline (--draft)
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GHOST_URL: ${{ secrets.GHOST_URL }}
+          GHOST_ADMIN_API_KEY: ${{ secrets.GHOST_ADMIN_API_KEY }}
           MAILERLITE_API_KEY: ${{ secrets.MAILERLITE_API_KEY }}
           MAILERLITE_SENDER_EMAIL: ${{ secrets.MAILERLITE_SENDER_EMAIL }}
           MAILERLITE_SENDER_NAME: ${{ secrets.MAILERLITE_SENDER_NAME }}
