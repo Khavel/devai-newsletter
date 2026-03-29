@@ -2,8 +2,10 @@ name: DevAI Newsletter Pipeline
 
 on:
   schedule:
-    # Every Sunday at 07:00 UTC = 09:00 CEST (Spain summer time)
-    - cron: '0 7 * * 0'
+    # Tuesday 07:00 UTC = 09:00 CEST — lanzamientos del lunes
+    - cron: '0 7 * * 2'
+    # Friday 07:00 UTC = 09:00 CEST — resumen semanal
+    - cron: '0 7 * * 5'
   workflow_dispatch:
     inputs:
       mode:
