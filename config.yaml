@@ -56,4 +56,3 @@ claude:
   max_tokens_rewrite: 500
 
 publishing:
-  platform: "beehiiv"
