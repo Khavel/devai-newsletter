@@ -1,5 +1,12 @@
 # Secrets
 .env
+.env.*
+seo/.env.twitter
+seo/.twitter-profile-*
+seo/.twitter-oauth2-tokens/
+gsc-service-account.json
+gsc-oauth-client.json
+token.json
 
 # Pipeline data (gitignored, generated at runtime)
 data/
@@ -20,3 +27,54 @@ env/
 # OS
 .DS_Store
 Thumbs.db
+promotion-accounts-master.xlsx
+
+# GCP service account key (GA4 Admin API)
+seo/.gcp-sa.json
+*.gcp-sa.json
+gcp-sa*.json
+
+# GA user OAuth token
+seo/.ga-oauth-token.json
+seo/.ga-adc.json
+
+# GSC OAuth token (secret)
+token-webmasters.json
+token*.json
+
+# --- Browser session / profile data (SECRETS: cookies, autofill) ---
+seo/.reddit-profile/
+seo/.reddit-cookies.json
+seo/*-cookies.json
+seo/.*-cookies.json
+
+# --- Reddit runtime scratch / debug artifacts ---
+seo/.reddit-*-out.json
+seo/.reddit-result.txt
+seo/.reddit-comment-draft.txt
+seo/.reddit-replies-out.json
+seo/reddit_*_debug.html
+seo/reddit_*_debug.png
+seo/reddit_pre_*.png
+seo/reddit_current.png
+seo/reddit_composer_debug.png
+seo/reddit_comment_posted.png
+seo/reddit_session_check.png
+
+# --- Operational logs (append-only runtime records; not code) ---
+seo/twitter_post_log.jsonl
+seo/twitter_engagement_log.jsonl
+seo/reddit_comment_log.jsonl
+seo/crosspost_log.jsonl
+
+# --- Misc runtime temp ---
+seo/.tmp_media.png
+seo/*.tmp
+*.jsonl.tmp
+
+# --- Serena / IDE tooling cache ---
+.serena/cache/
+.serena/
+
+# keep .env.example tracked despite .env.* rule above
+!.env.example

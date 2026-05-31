@@ -1,0 +1,28 @@
+# Disavow file for devaisemanal.com
+# Generated 2026-05-25
+# All current backlinks are spam (link farms, fake Fiverr SEO sites)
+
+# Moldova link farm (same IP: 195.20.19.178)
+domain:analyticshaven.top
+domain:blogsphere.top
+domain:buzzshrink.website
+domain:creativeposts.top
+domain:metamagic.top
+domain:optimizeflow.top
+
+# Fake Fiverr SEO sites
+domain:fiverr-cost-effective-seo.site
+domain:fiverr-affordable-seo-services.site
+domain:fiverr-quality-seo-at-affordable-rates.site
+domain:fiverr-seo-for-business-growth.site
+domain:fiverr-seo-for-small-businesses.site
+
+# seopxl spam network (same IP: 162.0.229.243)
+domain:seo-growth-authority-boost-hub.shop
+domain:seo-growth-optimization-hub.shop
+domain:seopxl-organic-boost-lab.shop
+domain:seopxl-performance-authority-engine.shop
+domain:seopxl-traffic-growth-lab.shop
+domain:seopxl-optimization-lab.shop
+domain:seopxl-ranking-boost-engine.shop
+domain:seopxl-ranking-boost-lab.shop

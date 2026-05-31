@@ -223,6 +223,36 @@ El HTML del email (diseñado para clientes de correo) se inyecta en Ghost como u
 - Se inyecta CSS por post (`codeinjection_head`) para ocultar el chrome de Ghost y eliminar padding superior
 - Se aplica el tag `newsletter` para identificar este tipo de posts
 
+### SEO y medición de crecimiento
+
+El pipeline genera `title`, `meta_title`, `meta_description` y `custom_excerpt` para cada newsletter publicada en Ghost usando los temas principales de la edición. La notificación de Telegram añade UTM al enlace web:
+
+```text
+utm_source=telegram&utm_medium=social&utm_campaign=newsletter_YYYY-MM-DD
+```
+
+Para actualizar newsletters ya publicadas y generar ideas evergreen:
+
+```bash
+python scripts/ghost_growth_maintenance.py --apply --report
+```
+
+El reporte queda en `output/evergreen_opportunities.md`. La inyección global de Ghost mide eventos de registro en Umami:
+
+```text
+signup_submit
+magic_link_sent
+magic_link_error
+```
+
+Para publicar o actualizar la tanda editorial evergreen derivada de las newsletters:
+
+```bash
+python scripts/publish_evergreen_articles.py
+```
+
+Este script es idempotente: si el slug ya existe, actualiza el post; si no existe, lo publica. También rellena `custom_excerpt` en las guías principales ya publicadas.
+
 ---
 
 ## Añadir nuevas fuentes
