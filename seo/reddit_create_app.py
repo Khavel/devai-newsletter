@@ -4,14 +4,36 @@ Reddit uses faceplate web components with shadow DOM, so we use JS to interact.
 """
 
 import json
+import os
 import re
 import sys
 import time
+from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv(Path(__file__).resolve().parent / ".env.reddit")
+except ImportError:
+    pass
+
 USERNAME = "Khavel_dev"
-PASSWORD = os.getenv("REDDIT_PASSWORD", "")
+
+
+def reddit_password(username):
+    """Resolve a Reddit account password from env (REDDIT_PASSWORD_<ACCOUNT>,
+    shared REDDIT_PASSWORD fallback). Never hardcoded; raises if unset."""
+    key = "REDDIT_PASSWORD_" + re.sub(r"[^A-Z0-9]", "_", username.upper())
+    pw = os.getenv(key) or os.getenv("REDDIT_PASSWORD", "")
+    if not pw:
+        raise RuntimeError(
+            f"No password for '{username}'. Set {key} (or REDDIT_PASSWORD) "
+            f"in seo/.env.reddit")
+    return pw
+
+
+PASSWORD = reddit_password(USERNAME)
 APP_NAME = "devai-agent"
 REDIRECT_URI = "http://localhost:8080"
 OUTPUT_FILE = "reddit_app_credentials.json"
