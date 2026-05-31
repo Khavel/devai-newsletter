@@ -70,7 +70,7 @@ All 3 sites have GA4 tags live (installed 2026-05-31). Properties live under GA 
 - **GCP project:** `testvpn-262120` (861555918471). Analytics Admin API enabled there. Ghost settings PUT returns **501** (Ghost-on-Fly limitation) — DevAI tag must be pasted via Ghost UI, not the API.
 - **Pi-hole note:** `analytics{admin,data}.googleapis.com` + `serviceusage`/`oauth2`/`accounts.google.com` are allowlisted on Firebat (192.168.1.21); they were blackholed by the Hagezi blocklist. Re-run `docker exec pihole pihole allow <host>` if DNS breaks.
 - **Reading traffic in chat:** the official **`google-analytics` MCP** (`analytics-mcp`, registered in `~/.claude.json`) is read-only — tools: `get_account_summaries`, `get_property_details`, `run_report`, `run_realtime_report`, `run_funnel_report`, `run_conversions_report`, `get_custom_dimensions_and_metrics`, `list_property_annotations`, `list_google_ads_links`. Auth via ADC at `seo/.ga-adc.json` (built from the OAuth token; gitignored), project `testvpn-262120`. Loads at Claude Code startup. Ask e.g. "how many users did futpicks get this week?".
-- **Pending:** GA4 ↔ Search Console links (Admin API does NOT support this — UI-only, do via Chrome). Full runbook + the stale-ref automation lesson: `seo/GA4_SEARCH_CONSOLE_LINK.md`.
+- **GA4 ↔ Search Console:** DONE (2026-05-31, via UI). All 3 linked to their matching domains. Runbook: `seo/GA4_SEARCH_CONSOLE_LINK.md`. Optional leftover: publish the "Search Console" report collection per property (Informes → Biblioteca → Search Console → Publicar).
 
 ## Cross-Posting — Quick Reference
 
