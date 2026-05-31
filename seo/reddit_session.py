@@ -99,7 +99,7 @@ def do_login(page, ctx, timeout=180):
         password_field.wait_for(state="visible", timeout=10000)
         password_field.click()
         time.sleep(0.5)
-        page.keyboard.type(os.getenv("REDDIT_PASSWORD", ""), delay=random.randint(30, 80))
+        page.keyboard.type(reddit_password(USERNAME), delay=random.randint(30, 80))
         print("  Password typed")
         time.sleep(1)
 
