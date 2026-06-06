@@ -38,6 +38,11 @@ gcp-sa*.json
 seo/.ga-oauth-token.json
 seo/.ga-adc.json
 
+# YouTube Shorts uploader (OAuth token + client secret + run log)
+seo/.youtube-token.json
+seo/youtube-oauth-client.json
+seo/youtube_upload_log.jsonl
+
 # GSC OAuth token (secret)
 token-webmasters.json
 token*.json
