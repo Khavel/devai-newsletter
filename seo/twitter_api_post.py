@@ -19,6 +19,15 @@ import os
 from datetime import datetime, timezone
 from pathlib import Path
 
+# Reuse the hub's guardrails (single source of truth).
+_HUB_LIB = Path(r"C:\Users\ceja_\Desktop\Desarrollos\Spam\lib")
+if _HUB_LIB.exists():
+    sys.path.insert(0, str(_HUB_LIB))
+try:
+    import guardrails  # type: ignore
+except Exception:
+    guardrails = None
+
 # Fix Windows console encoding for emoji output
 if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
     try:
@@ -387,6 +396,19 @@ def main():
 
     if len(text) > 280:
         print(f"WARNING: Tweet is {len(text)} chars (max 280).")
+
+    OWN_DOMAINS = {
+        "StatLineNerd": ["nbaproplab.com", "t.me/nbaproplab_vip"],
+        "FutProbLab": ["futpicks.com", "t.me/futpicks_vip"],
+        "DevAISemanal": ["devaisemanal.com"],
+    }
+    if guardrails is not None:
+        violations = guardrails.lint_text(text, own_domains=OWN_DOMAINS.get(args.account, []))
+        if violations:
+            print("BLOCKED by guardrails:")
+            for v in violations:
+                print(f"  - {v}")
+            sys.exit(3)
 
     has_media = bool(args.image or args.image_url or args.pick_id)
 
