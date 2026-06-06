@@ -6,8 +6,19 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
+# Reuse the hub's reddit account registry (single source of truth).
+_HUB_LIB = Path(r"C:\Users\ceja_\Desktop\Desarrollos\Spam\lib")
+if _HUB_LIB.exists():
+    sys.path.insert(0, str(_HUB_LIB))
+try:
+    import reddit_accounts  # type: ignore
+except Exception:
+    reddit_accounts = None
+
 SCRIPT_DIR = Path(__file__).parent
 LOG_FILE = SCRIPT_DIR / "reddit_comment_log.jsonl"
+_FALLBACK_UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                "(KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36")
 
 
 def main():
@@ -17,6 +28,7 @@ def main():
     parser.add_argument("--subreddit", "-s", default="", help="Subreddit name for logging")
     parser.add_argument("--topic", "-t", default="", help="Brief topic description for logging")
     parser.add_argument("--parent", "-p", default="", help="Parent comment ID for replies (t1_xxx)")
+    parser.add_argument("--account", default=None, help="Reddit persona (default Khavel_dev)")
     args = parser.parse_args()
 
     text = Path(args.text_file).read_text(encoding="utf-8").strip()
@@ -24,16 +36,24 @@ def main():
         print("ERROR: Comment text file is empty")
         sys.exit(1)
 
-    from reddit_session import sync_playwright, PROFILE_DIR, _reddit_api
+    from reddit_session import sync_playwright, _reddit_api
 
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
+    if reddit_accounts:
+        acct = reddit_accounts.resolve_account(args.account)
+        profile_dir = acct["profile_dir"]
+        user_agent = acct["user_agent"]
+    else:
+        profile_dir = str(SCRIPT_DIR / ".reddit-profile")
+        user_agent = _FALLBACK_UA
+
     with sync_playwright() as p:
         ctx = p.chromium.launch_persistent_context(
-            PROFILE_DIR,
+            profile_dir,
             headless=False,
             args=["--disable-blink-features=AutomationControlled"],
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+            user_agent=user_agent,
             viewport={"width": 1280, "height": 900},
         )
         page = ctx.pages[0] if ctx.pages else ctx.new_page()

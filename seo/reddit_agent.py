@@ -29,9 +29,23 @@ sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 import httpx
 
-PROFILE_DIR = str(Path(__file__).parent / ".reddit-profile")
+# Reuse the hub's reddit account registry (single source of truth).
+_HUB_LIB = Path(r"C:\Users\ceja_\Desktop\Desarrollos\Spam\lib")
+if _HUB_LIB.exists():
+    sys.path.insert(0, str(_HUB_LIB))
+try:
+    import reddit_accounts  # type: ignore
+except Exception:
+    reddit_accounts = None
+
+# Defaults (legacy Khavel_dev). resolve_account(name) overrides these at runtime in main().
+_DEFAULT_ACCT = reddit_accounts.resolve_account(None) if reddit_accounts else None
+PROFILE_DIR = _DEFAULT_ACCT["profile_dir"] if _DEFAULT_ACCT else str(Path(__file__).parent / ".reddit-profile")
 COOKIES_FILE = str(Path(__file__).parent / ".reddit-cookies.json")
-USERNAME = "Khavel_dev"
+USERNAME = _DEFAULT_ACCT["username"] if _DEFAULT_ACCT else "Khavel_dev"
+UA = (_DEFAULT_ACCT["user_agent"] if _DEFAULT_ACCT
+      else "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+           "(KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36")
 JSON_HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/125.0.0.0"}
 
 
@@ -156,7 +170,7 @@ def _get_browser(headless=False):
         PROFILE_DIR,
         headless=headless,
         viewport={"width": 1280, "height": 900},
-        user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+        user_agent=UA,
         args=[
             "--disable-blink-features=AutomationControlled",
             "--no-first-run",
@@ -511,51 +525,67 @@ def cmd_post(args):
 # ══════════════════════════════════════════════════════════════════════════════
 
 def main():
+    global PROFILE_DIR, USERNAME, UA
     parser = argparse.ArgumentParser(description="Reddit agent — .json reads + Playwright writes")
+    parser.add_argument("--account", default=None, help="Reddit persona (default Khavel_dev)")
+    # Shared parent so --account is also accepted AFTER the subcommand
+    # (e.g. `reddit_agent.py browse dotnet --account Khavel_dev`).
+    acct_parent = argparse.ArgumentParser(add_help=False)
+    # SUPPRESS so this only sets `account` when given after the subcommand,
+    # never clobbering a value parsed before the subcommand.
+    acct_parent.add_argument("--account", default=argparse.SUPPRESS,
+                             help="Reddit persona (default Khavel_dev)")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    p_login = sub.add_parser("login", help="Log in via browser (one-time setup)")
+    p_login = sub.add_parser("login", parents=[acct_parent], help="Log in via browser (one-time setup)")
     p_login.add_argument("--wait", type=int, default=120, help="Seconds to wait for manual login")
     p_login.set_defaults(func=cmd_login)
 
-    p_karma = sub.add_parser("karma", help="Check account karma & age")
+    p_karma = sub.add_parser("karma", parents=[acct_parent], help="Check account karma & age")
     p_karma.set_defaults(func=cmd_karma)
 
-    p_browse = sub.add_parser("browse", help="Browse subreddit")
+    p_browse = sub.add_parser("browse", parents=[acct_parent], help="Browse subreddit")
     p_browse.add_argument("subreddit")
     p_browse.add_argument("--new", action="store_true")
     p_browse.add_argument("--limit", type=int, default=15)
     p_browse.set_defaults(func=cmd_browse)
 
-    p_read = sub.add_parser("read", help="Read post + comments")
+    p_read = sub.add_parser("read", parents=[acct_parent], help="Read post + comments")
     p_read.add_argument("post_id")
     p_read.add_argument("--comments", type=int, default=10)
     p_read.set_defaults(func=cmd_read)
 
-    p_search = sub.add_parser("search", help="Search subreddit")
+    p_search = sub.add_parser("search", parents=[acct_parent], help="Search subreddit")
     p_search.add_argument("subreddit")
     p_search.add_argument("query")
     p_search.add_argument("--limit", type=int, default=15)
     p_search.set_defaults(func=cmd_search)
 
-    p_comment = sub.add_parser("comment", help="Comment on a post")
+    p_comment = sub.add_parser("comment", parents=[acct_parent], help="Comment on a post")
     p_comment.add_argument("post_id")
     p_comment.add_argument("text")
     p_comment.set_defaults(func=cmd_comment)
 
-    p_reply = sub.add_parser("reply", help="Reply to a comment")
+    p_reply = sub.add_parser("reply", parents=[acct_parent], help="Reply to a comment")
     p_reply.add_argument("comment_id")
     p_reply.add_argument("post_url", help="Post URL path like /comments/xxxxx")
     p_reply.add_argument("text")
     p_reply.set_defaults(func=cmd_reply)
 
-    p_post = sub.add_parser("post", help="Submit a new post")
+    p_post = sub.add_parser("post", parents=[acct_parent], help="Submit a new post")
     p_post.add_argument("subreddit")
     p_post.add_argument("title")
     p_post.add_argument("body")
     p_post.set_defaults(func=cmd_post)
 
     parsed = parser.parse_args()
+
+    if reddit_accounts:
+        acct = reddit_accounts.resolve_account(parsed.account)
+        PROFILE_DIR = acct["profile_dir"]
+        USERNAME = acct["username"]
+        UA = acct["user_agent"]
+
     parsed.func(parsed)
 
 

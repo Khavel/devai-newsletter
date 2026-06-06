@@ -23,8 +23,22 @@ sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 import httpx
 from playwright.sync_api import sync_playwright
 
-PROFILE_DIR = str(Path(__file__).parent / ".reddit-profile")
-USERNAME = "Khavel_dev"
+# Reuse the hub's reddit account registry (single source of truth).
+_HUB_LIB = Path(r"C:\Users\ceja_\Desktop\Desarrollos\Spam\lib")
+if _HUB_LIB.exists():
+    sys.path.insert(0, str(_HUB_LIB))
+try:
+    import reddit_accounts  # type: ignore
+except Exception:
+    reddit_accounts = None
+
+# Defaults (legacy Khavel_dev). resolve_account(name) overrides these at runtime in main().
+_DEFAULT_ACCT = reddit_accounts.resolve_account(None) if reddit_accounts else None
+PROFILE_DIR = _DEFAULT_ACCT["profile_dir"] if _DEFAULT_ACCT else str(Path(__file__).parent / ".reddit-profile")
+USERNAME = _DEFAULT_ACCT["username"] if _DEFAULT_ACCT else "Khavel_dev"
+UA = (_DEFAULT_ACCT["user_agent"] if _DEFAULT_ACCT
+      else "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+           "(KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36")
 JSON_HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/125.0.0.0"}
 CMD_FILE = str(Path(__file__).parent / ".reddit-cmd.txt")
 RESULT_FILE = str(Path(__file__).parent / ".reddit-result.txt")
@@ -323,18 +337,26 @@ def run_command(page, cmd_str):
 
 
 def main():
+    global PROFILE_DIR, USERNAME, UA
     parser = argparse.ArgumentParser()
     parser.add_argument("--cmd", help="Single command to execute then exit")
     parser.add_argument("--wait", type=int, default=180, help="Login wait timeout")
+    parser.add_argument("--account", default=None, help="Reddit persona (default Khavel_dev)")
     args = parser.parse_args()
 
-    print("Starting Reddit session...")
+    if reddit_accounts:
+        acct = reddit_accounts.resolve_account(args.account)
+        PROFILE_DIR = acct["profile_dir"]
+        USERNAME = acct["username"]
+        UA = acct["user_agent"]
+
+    print(f"Starting Reddit session as {USERNAME}...")
     pw = sync_playwright().start()
     ctx = pw.chromium.launch_persistent_context(
         PROFILE_DIR,
         headless=False,
         viewport={"width": 1280, "height": 900},
-        user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+        user_agent=UA,
         args=["--disable-blink-features=AutomationControlled", "--no-first-run"],
     )
     page = ctx.new_page()
