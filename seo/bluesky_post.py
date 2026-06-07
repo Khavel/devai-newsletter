@@ -77,7 +77,10 @@ ACCOUNTS = {
         "handle_env": "SHARPYARD_BSKY_HANDLE",
         "app_password_env": "SHARPYARD_BSKY_APP_PASSWORD",
         "product": "Sharpyard",
-        "own_domains": ["sharpyard.com"],
+        # Build-in-public posts promote the FREE lead-magnet repo + the waitlist, never the
+        # cold landing page. own_domains mirrors products/sharpyard/product.yaml (top-level).
+        "own_domains": ["sharpyard.dev", "github.com/Khavel/dotnet-claude-starter",
+                        "list.sharpyard.dev"],
     },
 }
 
