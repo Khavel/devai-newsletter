@@ -399,7 +399,9 @@ def main():
 
     OWN_DOMAINS = {
         "StatLineNerd": ["nbaproplab.com", "t.me/nbaproplab_vip"],
-        "FutProbLab": ["futpicks.com", "t.me/futpicks_vip"],
+        "FutProbLab": ["futpicks.com", "t.me/futpicks_vip",
+                       "futpicks.substack.com", "tipstrr.com/tipster/futpicks",
+                       "blogabet.com/futpicks"],
         "DevAISemanal": ["devaisemanal.com"],
     }
     if guardrails is not None:

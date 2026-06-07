@@ -63,7 +63,9 @@ ACCOUNTS = {
         "handle_env": "FUTPROBLAB_BSKY_HANDLE",
         "app_password_env": "FUTPROBLAB_BSKY_APP_PASSWORD",
         "product": "FutPicks",
-        "own_domains": ["futpicks.com", "t.me/futpicks_vip"],
+        "own_domains": ["futpicks.com", "t.me/futpicks_vip",
+                        "futpicks.substack.com", "tipstrr.com/tipster/futpicks",
+                        "blogabet.com/futpicks"],
     },
     "StatLineNerd": {
         "handle_env": "STATLINENERD_BSKY_HANDLE",
