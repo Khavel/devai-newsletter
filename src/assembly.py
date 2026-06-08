@@ -43,6 +43,11 @@ MONTH_ES = [
     "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
 ]
 
+# Reply-loop engagement engine: every issue ends with a question that invites a reply
+# (replies are the strongest deliverability + retention signal a small list has).
+# Override per issue via the articles data `reply_question` or newsletter config.
+DEFAULT_REPLY_QUESTION = "¿Qué herramienta de IA estás usando más esta semana?"
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -111,6 +116,9 @@ def run(
         "intro": data.get("intro", ""),
         "articles": articles_ctx,
         "repo_of_week": repo_ctx,
+        "reply_question": (
+            data.get("reply_question") or nl_cfg.get("reply_question") or DEFAULT_REPLY_QUESTION
+        ),
         "category_colors": CATEGORY_COLORS,
     }
 
