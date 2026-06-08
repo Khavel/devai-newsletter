@@ -3,6 +3,9 @@ newsletter:
   tagline: "Herramientas de IA para devs, en español"
   author: "Alex"
   frequency: "weekly"
+  # Email real donde lees las respuestas (idealmente = MAILERLITE_SENDER_EMAIL).
+  # El reply-loop depende de esto. Vacío => se oculta el enlace "Responder al editor".
+  reply_to: ""
 
 sources:
   rss:

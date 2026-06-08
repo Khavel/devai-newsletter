@@ -29,6 +29,14 @@
 
 {{ "═" * 60 }}
 {% endif %}
+{% if take_of_week %}
+{{ "═" * 60 }}
+💬  EL TAKE DE LA SEMANA
+
+{{ take_of_week.content_plain }}
+
+{{ "═" * 60 }}
+{% endif %}
 
 {{ reply_question }}
 Responde a este email y cuéntame. Leo todas.  (👍 si te sirvió / 👎 si no)
@@ -39,5 +47,5 @@ Responde a este email y cuéntame. Leo todas.  (👍 si te sirvió / 👎 si no)
 
 {{ newsletter.name }} — Escrita por {{ newsletter.author }}
 Ediciones anteriores : [enlace]
-Responder al editor  : devai@example.com
-Cancelar suscripción : [enlace de baja]
+{% if newsletter.reply_to %}Responder al editor  : {{ newsletter.reply_to }}
+{% endif %}Cancelar suscripción : [enlace de baja]

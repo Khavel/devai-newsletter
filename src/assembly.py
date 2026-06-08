@@ -106,6 +106,14 @@ def run(
     articles_ctx = [_build_article_ctx(a) for a in data.get("articles", [])]
     repo_ctx = _build_article_ctx(data["repo_of_week"]) if data.get("repo_of_week") else None
     tool_ctx = _build_article_ctx(data["tool_of_week"]) if data.get("tool_of_week") else None
+    take_ctx = (
+        {
+            "content_html": markdown_to_html(data["take_of_week"]),
+            "content_plain": markdown_to_plain(data["take_of_week"]),
+        }
+        if data.get("take_of_week")
+        else None
+    )
 
     ctx = {
         "newsletter": {
@@ -118,6 +126,7 @@ def run(
         "articles": articles_ctx,
         "repo_of_week": repo_ctx,
         "tool_of_week": tool_ctx,
+        "take_of_week": take_ctx,
         "reply_question": (
             data.get("reply_question") or nl_cfg.get("reply_question") or DEFAULT_REPLY_QUESTION
         ),

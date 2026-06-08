@@ -80,6 +80,30 @@ El párrafo debe:
 
 Responde SOLO con el párrafo, sin formato Markdown especial."""
 
+SUBJECT_SYSTEM = """\
+Eres el editor de DevAI. Escribe UNA línea de asunto para el email de esta semana.
+
+Reglas:
+- En español, máximo 55 caracteres (los buzones cortan lo demás)
+- Concreta y con gancho: nombra la novedad más importante de la edición
+- Despierta curiosidad o promete valor, SIN clickbait ni MAYÚSCULAS gritonas
+- Nada de "Newsletter", "Edición semanal" ni la fecha (aburre y baja la apertura)
+- Tono ejemplo: "Claude Code edita 10 archivos a la vez", "El cambio de Cursor que importa"
+
+Responde SOLO con la línea de asunto, sin comillas."""
+
+TAKE_SYSTEM = """\
+Eres el editor de DevAI. Escribe "El take de la semana": tu opinión honesta y con criterio sobre \
+la noticia más importante de esta edición, desde la óptica de un dev que programa en español.
+
+80-110 palabras. Debe:
+1. Empezar con un titular de opinión en negrita (max 10 palabras)
+2. Tomar partido: di qué piensas de verdad, no resumas la noticia
+3. Dar el ángulo práctico para el lector ("a ti esto te afecta porque...")
+4. Ser honesto: si algo está sobrevalorado o es humo, dilo
+
+Sin links. Responde SOLO con el texto en formato Markdown."""
+
 
 # ---------------------------------------------------------------------------
 # Claude call helpers
@@ -142,6 +166,31 @@ def _generate_intro(
     return _call(client, model, 200, INTRO_SYSTEM, user)
 
 
+def _generate_subject(
+    client: anthropic.Anthropic, model: str, article_items: list[dict]
+) -> str:
+    summaries = [
+        item.get("relevance_reason") or item.get("original_title", "")
+        for item in article_items[:5]
+    ]
+    user = (
+        "Historias de esta edición (la primera es la más importante):\n"
+        + "\n".join(f"- {s}" for s in summaries)
+    )
+    return _call(client, model, 60, SUBJECT_SYSTEM, user).strip().strip('"').strip("'").strip()
+
+
+def _generate_take(
+    client: anthropic.Anthropic, model: str, article_items: list[dict]
+) -> str:
+    top = [
+        f"- {item.get('original_title', '')}: {item.get('relevance_reason', '')}"
+        for item in article_items[:3]
+    ]
+    user = "La historia principal y el contexto de esta edición:\n" + "\n".join(top)
+    return _call(client, model, 300, TAKE_SYSTEM, user)
+
+
 def _fallback_content(item: dict, is_repo: bool = False) -> str:
     """Minimal fallback if Claude call fails."""
     title = item.get("original_title", "Sin título")
@@ -165,7 +214,7 @@ def run(config: dict, curated_file: Path, data_dir: Path, date_str: str) -> Path
     curated: list[dict] = json.loads(curated_file.read_text(encoding="utf-8"))
     if not curated:
         logger.warning("Curated list is empty — creating minimal articles file")
-        result = {"date": date_str, "intro": "Sin novedades esta semana.", "articles": [], "repo_of_week": None, "tool_of_week": None}
+        result = {"date": date_str, "subject": "", "intro": "Sin novedades esta semana.", "articles": [], "repo_of_week": None, "tool_of_week": None, "take_of_week": None}
         output.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
         return output
 
@@ -237,12 +286,32 @@ def run(config: dict, curated_file: Path, data_dir: Path, date_str: str) -> Path
             f"Esta edición: {len(written_articles)} historias que merece la pena leer."
         )
 
+    # Generate a compelling email subject line (top open-rate lever)
+    logger.info("  Generating subject line…")
+    try:
+        subject = _generate_subject(client, model, regular_items)
+    except Exception as exc:
+        logger.error(f"  Subject generation failed: {exc}")
+        subject = ""
+
+    # Generate "El take de la semana" (opinion / differentiation moat)
+    take: str | None = None
+    if regular_items:
+        logger.info("  Generating take of the week…")
+        try:
+            take = _generate_take(client, model, regular_items)
+        except Exception as exc:
+            logger.error(f"  Take generation failed: {exc}")
+            take = None
+
     result = {
         "date": date_str,
+        "subject": subject,
         "intro": intro,
         "articles": written_articles,
         "repo_of_week": written_repo,
         "tool_of_week": written_tool,
+        "take_of_week": take,
     }
 
     output.write_text(

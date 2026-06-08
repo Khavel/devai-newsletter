@@ -148,9 +148,14 @@ def _publish_mailerlite(
     except Exception:
         human_date = date_str
 
-    subject = seo.get("title") if seo else f"{name} — {human_date}"
-    if tagline:
-        subject += f" · {tagline}"
+    # Prefer the AI-generated email subject (top open-rate lever); fall back to SEO title / date.
+    gen_subject = (_load_article_data(date_str).get("subject") or "").strip()
+    if gen_subject:
+        subject = gen_subject
+    else:
+        subject = seo.get("title") if seo else f"{name} — {human_date}"
+        if tagline:
+            subject += f" · {tagline}"
 
     ml_headers = {
         "Authorization": f"Bearer {api_key}",

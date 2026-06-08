@@ -186,6 +186,35 @@
           </tr>
           {% endif %}
 
+          {% if take_of_week %}
+          <!-- ┌──────────────────────────────────────────────────┐ -->
+          <!-- │  EL TAKE DE LA SEMANA                             │ -->
+          <!-- └──────────────────────────────────────────────────┘ -->
+          <tr>
+            <td style="padding:22px 40px 0 40px;border-top:2px solid #e2e8f0;" class="pad">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="background-color:#8b5cf6;border-radius:3px;padding:3px 9px;">
+                    <span style="font-family:'Courier New',Courier,monospace;font-size:10px;
+                                 font-weight:700;color:#ffffff;text-transform:uppercase;
+                                 letter-spacing:0.8px;">
+                      &#128172; El take de la semana
+                    </span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:10px 40px 28px 40px;border-bottom:2px solid #e2e8f0;" class="pad">
+              <div style="font-family:Georgia,'Times New Roman',serif;font-size:14px;
+                          color:#1e293b;border-left:3px solid #8b5cf6;padding-left:14px;">
+                {{ take_of_week.content_html | safe }}
+              </div>
+            </td>
+          </tr>
+          {% endif %}
+
           <!-- ┌──────────────────────────────────────────────────┐ -->
           <!-- │  REPLY PROMPT (engagement loop)                   │ -->
           <!-- └──────────────────────────────────────────────────┘ -->
@@ -236,10 +265,10 @@
                         margin:0;line-height:1.6;">
                 <a href="#" style="color:#94a3b8;text-decoration:none;">Ediciones anteriores</a>
                 &nbsp;&middot;&nbsp;
-                <a href="mailto:devai@example.com"
+                {% if newsletter.reply_to %}<a href="mailto:{{ newsletter.reply_to }}"
                    style="color:#94a3b8;text-decoration:none;">Responder al editor</a>
                 &nbsp;&middot;&nbsp;
-                <a href="#unsubscribe"
+                {% endif %}<a href="#unsubscribe"
                    style="color:#94a3b8;text-decoration:none;">Cancelar suscripci&oacute;n</a>
               </p>
             </td>
