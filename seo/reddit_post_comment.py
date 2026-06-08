@@ -23,7 +23,8 @@ _FALLBACK_UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
 
 def build_log_entry(account, post_id, comment_id, subreddit, topic, parent, text, now=None):
     """Build one reddit_comment_log.jsonl row, stamped with the posting *account*."""
-    now = now or datetime.now(timezone.utc)
+    if now is None:
+        now = datetime.now(timezone.utc)
     return {
         "date": now.strftime("%Y-%m-%d"),
         "time": now.strftime("%H:%M:%S"),
