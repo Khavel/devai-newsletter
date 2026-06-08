@@ -21,6 +21,22 @@ _FALLBACK_UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                 "(KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36")
 
 
+def build_log_entry(account, post_id, comment_id, subreddit, topic, parent, text, now=None):
+    """Build one reddit_comment_log.jsonl row, stamped with the posting *account*."""
+    now = now or datetime.now(timezone.utc)
+    return {
+        "date": now.strftime("%Y-%m-%d"),
+        "time": now.strftime("%H:%M:%S"),
+        "post_id": post_id,
+        "comment_id": comment_id,
+        "subreddit": subreddit,
+        "topic": topic,
+        "parent": parent or "",
+        "account": account,
+        "text_preview": text[:80],
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(description="Post a Reddit comment from a text file")
     parser.add_argument("post_id", help="Reddit post ID (e.g., 1to03iw)")
@@ -44,9 +60,11 @@ def main():
         acct = reddit_accounts.resolve_account(args.account)
         profile_dir = acct["profile_dir"]
         user_agent = acct["user_agent"]
+        account_name = acct["username"]
     else:
         profile_dir = str(SCRIPT_DIR / ".reddit-profile")
         user_agent = _FALLBACK_UA
+        account_name = "Khavel_dev"
 
     with sync_playwright() as p:
         ctx = p.chromium.launch_persistent_context(
@@ -73,16 +91,9 @@ def main():
             cid = things[0]["data"]["id"] if things else "?"
             print(f"OK: Comment posted (id: {cid})")
 
-            log_entry = {
-                "date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
-                "time": datetime.now(timezone.utc).strftime("%H:%M:%S"),
-                "post_id": args.post_id,
-                "comment_id": cid,
-                "subreddit": args.subreddit,
-                "topic": args.topic,
-                "parent": args.parent or "",
-                "text_preview": text[:80],
-            }
+            log_entry = build_log_entry(
+                account_name, args.post_id, cid, args.subreddit, args.topic, args.parent, text
+            )
             with open(LOG_FILE, "a", encoding="utf-8") as f:
                 f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
             print(f"Logged to {LOG_FILE}")
