@@ -12,10 +12,11 @@ live wrapper: it only adds Bot API I/O (stdlib urllib, no extra dep, mirroring t
 hub's lib/notify.py Telegram pattern) and per-channel credential resolution.
 
 Credentials come from ../.env (the devai-newsletter root, NEVER committed):
-  TELEGRAM_BOT_TOKEN          shared bot token
-  TELEGRAM_CHAT_NBA           per-channel chat id (falls back to TELEGRAM_CHAT_ID)
-  TELEGRAM_CHAT_FUT
-  TELEGRAM_CHAT_DEVAI
+  TELEGRAM_BOT_TOKEN_<NBA|FUT|DEVAI>  per-channel bot token. Each product runs its OWN
+                                      bot, and a bot can only post to a channel where it
+                                      is an admin, so the per-channel bot must own that
+                                      channel. Falls back to the shared TELEGRAM_BOT_TOKEN.
+  TELEGRAM_CHAT_NBA / _FUT / _DEVAI   per-channel chat id (no global fallback)
 """
 import argparse
 import json
@@ -86,19 +87,27 @@ def load_env():
 
 
 def get_credentials(channel: str):
-    """Return (token, chat_id) for a channel or exit if missing."""
+    """Return (token, chat_id) for a channel or exit if missing.
+
+    Bot is resolved per-channel first (TELEGRAM_BOT_TOKEN_<CHANNEL>) because each
+    product runs its own bot; falls back to the shared TELEGRAM_BOT_TOKEN. There is
+    deliberately NO global TELEGRAM_CHAT_ID fallback: it points at the unrelated
+    PlexAnnouncer channel, so a missing per-channel chat id fails loudly rather than
+    mis-posting a product drop to the wrong place.
+    """
     env = load_env()
-    token = env.get("TELEGRAM_BOT_TOKEN") or os.getenv("TELEGRAM_BOT_TOKEN")
-    chat_env = CHANNELS[channel]["chat_env"]
-    chat = (
-        env.get(chat_env)
-        or os.getenv(chat_env)
-        or env.get("TELEGRAM_CHAT_ID")
-        or os.getenv("TELEGRAM_CHAT_ID")
+    chan = channel.upper()
+    token = (
+        env.get(f"TELEGRAM_BOT_TOKEN_{chan}")
+        or os.getenv(f"TELEGRAM_BOT_TOKEN_{chan}")
+        or env.get("TELEGRAM_BOT_TOKEN")
+        or os.getenv("TELEGRAM_BOT_TOKEN")
     )
+    chat_env = CHANNELS[channel]["chat_env"]
+    chat = env.get(chat_env) or os.getenv(chat_env)
     if not token or not chat:
         print(f"ERROR: Missing Telegram credentials for channel '{channel}'.")
-        print(f"  Set TELEGRAM_BOT_TOKEN and {chat_env} (or TELEGRAM_CHAT_ID) in {ENV_FILE}")
+        print(f"  Set {chat_env} and a bot token (TELEGRAM_BOT_TOKEN_{chan} or TELEGRAM_BOT_TOKEN) in {ENV_FILE}")
         sys.exit(1)
     return token, chat
 
