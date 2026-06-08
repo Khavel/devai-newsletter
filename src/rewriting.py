@@ -51,6 +51,22 @@ El texto debe:
 
 Responde SOLO con el texto en formato Markdown."""
 
+TOOL_SYSTEM = """\
+Eres un desarrollador español que escribe la sección "Herramienta de la semana" de una \
+newsletter técnica sobre AI developer tools. Eliges UNA herramienta que merece la pena probar \
+esta semana y explicas por qué, con honestidad.
+
+Escribe 100-140 palabras en español sobre esta herramienta.
+
+El texto debe:
+1. Empezar con el nombre de la herramienta en negrita
+2. Explicar qué hace y qué problema resuelve
+3. Dar un ángulo de "pruébala esta semana": para qué la usarías, en qué encaja
+4. Ser honesto sobre sus límites o para quién NO es
+5. Terminar con el link: [probarla](url)
+
+Responde SOLO con el texto en formato Markdown."""
+
 INTRO_SYSTEM = """\
 Eres el editor de DevAI, una newsletter técnica semanal sobre AI developer tools en español.
 
@@ -104,6 +120,17 @@ def _rewrite_repo(client: anthropic.Anthropic, model: str, max_tokens: int, item
     return _call(client, model, max_tokens + 100, REPO_SYSTEM, user)
 
 
+def _rewrite_tool(client: anthropic.Anthropic, model: str, max_tokens: int, item: dict) -> str:
+    user = (
+        f"Herramienta: {item.get('original_title', '')}\n"
+        f"Fuente: {item.get('source', '')}\n"
+        f"Descripción: {item.get('snippet', '')}\n"
+        f"URL: {item.get('original_url', '')}\n"
+        f"Razón de relevancia: {item.get('relevance_reason', '')}"
+    )
+    return _call(client, model, max_tokens + 100, TOOL_SYSTEM, user)
+
+
 def _generate_intro(
     client: anthropic.Anthropic, model: str, article_items: list[dict]
 ) -> str:
@@ -138,7 +165,7 @@ def run(config: dict, curated_file: Path, data_dir: Path, date_str: str) -> Path
     curated: list[dict] = json.loads(curated_file.read_text(encoding="utf-8"))
     if not curated:
         logger.warning("Curated list is empty — creating minimal articles file")
-        result = {"date": date_str, "intro": "Sin novedades esta semana.", "articles": [], "repo_of_week": None}
+        result = {"date": date_str, "intro": "Sin novedades esta semana.", "articles": [], "repo_of_week": None, "tool_of_week": None}
         output.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
         return output
 
@@ -151,12 +178,16 @@ def run(config: dict, curated_file: Path, data_dir: Path, date_str: str) -> Path
     # Separate out the best GitHub repo for the "Repo de la semana" section.
     # Strategy: first item with type=github or category=repo (already ranked by Claude).
     repo_item: dict | None = None
+    tool_item: dict | None = None
     regular_items: list[dict] = []
 
     for item in sorted(curated, key=lambda x: x.get("rank", 99)):
         is_repo = item.get("type") == "github" or item.get("category") == "repo"
+        is_tool = item.get("category") == "tool"
         if is_repo and repo_item is None:
             repo_item = item
+        elif is_tool and tool_item is None:
+            tool_item = item
         else:
             regular_items.append(item)
 
@@ -184,6 +215,17 @@ def run(config: dict, curated_file: Path, data_dir: Path, date_str: str) -> Path
             content = _fallback_content(repo_item, is_repo=True)
         written_repo = {**repo_item, "content": content}
 
+    # Rewrite tool of the week
+    written_tool: dict | None = None
+    if tool_item:
+        logger.info(f"  Rewriting tool of the week: {tool_item.get('original_title', '')[:60]}…")
+        try:
+            content = _rewrite_tool(client, model, max_tokens, tool_item)
+        except Exception as exc:
+            logger.error(f"  Tool rewrite failed: {exc}")
+            content = _fallback_content(tool_item)
+        written_tool = {**tool_item, "content": content}
+
     # Generate weekly intro
     logger.info("  Generating intro paragraph…")
     try:
@@ -200,6 +242,7 @@ def run(config: dict, curated_file: Path, data_dir: Path, date_str: str) -> Path
         "intro": intro,
         "articles": written_articles,
         "repo_of_week": written_repo,
+        "tool_of_week": written_tool,
     }
 
     output.write_text(
@@ -207,6 +250,7 @@ def run(config: dict, curated_file: Path, data_dir: Path, date_str: str) -> Path
     )
     logger.info(
         f"Rewriting complete: {len(written_articles)} articles "
-        f"+ {'1 repo' if written_repo else 'no repo'} -> {output}"
+        f"+ {'1 repo' if written_repo else 'no repo'} "
+        f"+ {'1 tool' if written_tool else 'no tool'} -> {output}"
     )
     return output

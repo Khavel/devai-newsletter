@@ -155,6 +155,37 @@
           </tr>
           {% endif %}
 
+          {% if tool_of_week %}
+          <!-- ┌──────────────────────────────────────────────────┐ -->
+          <!-- │  HERRAMIENTA DE LA SEMANA                         │ -->
+          <!-- └──────────────────────────────────────────────────┘ -->
+          <tr>
+            <td style="background-color:#fffbeb;padding:22px 40px 0 40px;
+                        border-top:2px solid #e2e8f0;" class="pad">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="background-color:#f59e0b;border-radius:3px;padding:3px 9px;">
+                    <span style="font-family:'Courier New',Courier,monospace;font-size:10px;
+                                 font-weight:700;color:#ffffff;text-transform:uppercase;
+                                 letter-spacing:0.8px;">
+                      &#128295; Herramienta de la semana
+                    </span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color:#fffbeb;padding:10px 40px 28px 40px;
+                        border-bottom:2px solid #e2e8f0;" class="pad">
+              <div style="font-family:Georgia,'Times New Roman',serif;font-size:14px;
+                          color:#1e293b;">
+                {{ tool_of_week.content_html | safe }}
+              </div>
+            </td>
+          </tr>
+          {% endif %}
+
           <!-- ┌──────────────────────────────────────────────────┐ -->
           <!-- │  REPLY PROMPT (engagement loop)                   │ -->
           <!-- └──────────────────────────────────────────────────┘ -->
