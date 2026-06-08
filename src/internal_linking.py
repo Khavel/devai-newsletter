@@ -14,8 +14,12 @@ INTERNAL_LINKS: dict[str, str] = {
 # Patterns compiled once at module load
 _COMPILED: list[tuple[re.Pattern, str, str]] = []
 for _kw, _path in INTERNAL_LINKS.items():
+    # Word-boundary match for the keyword, skipped if it is already inside an <a>...</a>
+    # (the (?![^<]*</a>) look-ahead is the real guard). The previous (?<!</?a[^>]*>)
+    # look-behind was variable-width -> Python re raised "look-behind requires fixed-width
+    # pattern" and broke the whole pipeline. It was also redundant with the look-ahead.
     _pat = re.compile(
-        r"(?<!</?a[^>]*>)(?<!\w)(" + re.escape(_kw) + r")(?!\w)(?![^<]*</a>)",
+        r"(?<!\w)(" + re.escape(_kw) + r")(?!\w)(?![^<]*</a>)",
         re.IGNORECASE,
     )
     _COMPILED.append((_pat, _path, _kw))
