@@ -35,7 +35,7 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Run pipeline (--draft)
+      - name: Run pipeline
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GHOST_URL: ${{ secrets.GHOST_URL }}
@@ -46,4 +46,5 @@ jobs:
           MAILERLITE_GROUP_ID: ${{ secrets.MAILERLITE_GROUP_ID }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: python run.py --draft
+        # Honor the workflow_dispatch mode input; scheduled (cron) runs have no input -> default draft.
+        run: python run.py --${{ github.event.inputs.mode || 'draft' }}
