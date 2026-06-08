@@ -188,7 +188,12 @@ def _publish_mailerlite(
         )
         if resp.status_code not in (200, 201):
             logger.error(f"MailerLite create error {resp.status_code}: {resp.text[:500]}")
-            resp.raise_for_status()
+            # Non-fatal: Ghost already published (run() calls _publish_ghost first); one channel
+            # failing must not abort the pipeline. Common cause: HTTP 422 "advanced plan" — MailerLite
+            # blocks API content submission on free/basic plans. The newsletter is live on the web;
+            # only the email did not go out.
+            logger.error("MailerLite email NOT sent (see error above) — continuing; newsletter is live on Ghost.")
+            return None
         data = resp.json()
 
     campaign_id  = data.get("data", {}).get("id", "unknown")
