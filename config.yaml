@@ -6,6 +6,10 @@ newsletter:
   # Email real donde lees las respuestas (idealmente = MAILERLITE_SENDER_EMAIL).
   # El reply-loop depende de esto. Vacío => se oculta el enlace "Responder al editor".
   reply_to: ""
+  # Canal de envío del email: "ghost" (nativo, vía Mailgun) | "mailerlite" | "none" (solo web).
+  # "ghost" REQUIERE Mailgun configurado en Ghost ANTES de activarlo (si no, el post queda en draft).
+  email_provider: "none"
+  ghost_newsletter_slug: "default"   # Ghost > Settings > Email newsletter > slug del newsletter
 
 sources:
   rss:

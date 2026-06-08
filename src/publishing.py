@@ -311,9 +311,14 @@ def _build_json_ld(title: str, description: str, date_str: str, ghost_base_url: 
 
 
 def _publish_ghost(
-    html_content: str, config: dict, date_str: str, seo: dict[str, str] | None = None
+    html_content: str, config: dict, date_str: str, seo: dict[str, str] | None = None,
+    send_email: bool = False,
 ) -> str | None:
-    """Publish newsletter as a Ghost post. Returns the post URL, or None if skipped."""
+    """Publish newsletter as a Ghost post. Returns the post URL, or None if skipped.
+
+    If send_email is True, the post is created as a draft and then published with the
+    ?newsletter= param so Ghost emails it to members (requires Mailgun configured in Ghost).
+    """
     admin_api_key = os.getenv("GHOST_ADMIN_API_KEY", "").strip()
     ghost_url     = os.getenv("GHOST_URL", "").strip().rstrip("/")
 
@@ -360,11 +365,13 @@ def _publish_ghost(
     # Auto-detect topic tags from newsletter content
     tags = _build_auto_tags(html_content)
 
+    # To email via Ghost we must create a DRAFT first, then publish with ?newsletter= (Ghost only
+    # sends on the draft->published transition). Web-only publishes directly as "published".
     post_payload = {
         "posts": [{
             "title":              title,
             "slug":               slug,
-            "status":             "published",
+            "status":             "draft" if send_email else "published",
             "mobiledoc":          mobiledoc,
             "codeinjection_head": codeinjection_head,
             "custom_excerpt":      seo.get("custom_excerpt") if seo else None,
@@ -394,9 +401,35 @@ def _publish_ghost(
         if resp.status_code not in (200, 201):
             logger.error(f"Ghost API error {resp.status_code}: {resp.text[:500]}")
             resp.raise_for_status()
-        data = resp.json()
+        post = resp.json()["posts"][0]
 
-    post_url = data["posts"][0]["url"]
+        if send_email:
+            # Publish the draft AND send it as a newsletter email to all members (Ghost -> Mailgun).
+            nl_slug = config.get("newsletter", {}).get("ghost_newsletter_slug", "default")
+            eresp = client.put(
+                f"{ghost_url}/ghost/api/admin/posts/{post['id']}/"
+                f"?newsletter={nl_slug}&email_segment=all",
+                headers=headers,
+                json={"posts": [{"updated_at": post["updated_at"], "status": "published"}]},
+            )
+            if eresp.status_code not in (200, 201):
+                logger.error(f"Ghost email-publish error {eresp.status_code}: {eresp.text[:400]}")
+                logger.error(
+                    f"Newsletter email NOT sent (post left as draft). Verify Mailgun is configured "
+                    f"in Ghost and that the newsletter slug '{nl_slug}' is correct."
+                )
+            else:
+                post = eresp.json()["posts"][0]
+                email = post.get("email") or {}
+                if email.get("status") == "failed":
+                    logger.error(f"Ghost newsletter email FAILED: {email.get('error')}")
+                else:
+                    logger.info(
+                        f"Ghost newsletter email queued (status={email.get('status')}, "
+                        f"recipients={email.get('email_count')})"
+                    )
+
+    post_url = post["url"]
     logger.info(f"Ghost post published: {post_url}")
 
     print(f"\n{'='*60}")
@@ -467,9 +500,10 @@ def run(config: dict, html_file: Path, txt_file: Path, mode: str) -> None:
     seo = _build_newsletter_seo(config, date_str, article_data)
 
     if mode == "draft":
-        logger.info("Publishing to Ghost and MailerLite…")
-        ghost_post_url    = _publish_ghost(html_content, config, date_str, seo)
-        mailerlite_url    = _publish_mailerlite(html_content, config, date_str, seo)
+        provider = config.get("newsletter", {}).get("email_provider", "none")
+        logger.info(f"Publishing to Ghost (email channel: {provider})…")
+        ghost_post_url    = _publish_ghost(html_content, config, date_str, seo, send_email=(provider == "ghost"))
+        mailerlite_url    = _publish_mailerlite(html_content, config, date_str, seo) if provider == "mailerlite" else None
         share_url         = _append_utm(ghost_post_url, "telegram", "social", f"newsletter_{date_str}") if ghost_post_url else None
         _notify_telegram(
             html_file, config, date_str,
