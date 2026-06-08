@@ -84,6 +84,26 @@ def _dismiss_popups(page):
         pass
 
 
+def reddit_password(username):
+    """Per-account Reddit password. Key = REDDIT_PASSWORD_<USERNAME upper> in env or .env.reddit;
+    falls back to the generic REDDIT_PASSWORD. Returns None if not found (caller falls back to manual login)."""
+    key = "REDDIT_PASSWORD_" + (username or "").upper()
+    val = os.getenv(key) or os.getenv("REDDIT_PASSWORD")
+    if val:
+        return val
+    env_file = Path(__file__).parent / ".env.reddit"
+    if env_file.exists():
+        data = {}
+        for line in env_file.read_text(encoding="utf-8").splitlines():
+            s = line.strip()
+            if not s or s.startswith("#") or "=" not in s:
+                continue
+            k, _, v = s.partition("=")
+            data[k.strip()] = v.strip().strip('"').strip("'")
+        return data.get(key) or data.get("REDDIT_PASSWORD")
+    return None
+
+
 def do_login(page, ctx, timeout=180):
     """Attempt automated login, fall back to manual wait."""
     print(f"Logging in as {USERNAME}...")
@@ -109,11 +129,14 @@ def do_login(page, ctx, timeout=180):
             time.sleep(3)
 
         # Password field
+        pw = reddit_password(USERNAME)
+        if not pw:
+            raise RuntimeError(f"no stored password for {USERNAME} (set REDDIT_PASSWORD_{USERNAME.upper()} in .env.reddit)")
         password_field = page.locator('#login-password')
         password_field.wait_for(state="visible", timeout=10000)
         password_field.click()
         time.sleep(0.5)
-        page.keyboard.type(reddit_password(USERNAME), delay=random.randint(30, 80))
+        page.keyboard.type(pw, delay=random.randint(30, 80))
         print("  Password typed")
         time.sleep(1)
 
