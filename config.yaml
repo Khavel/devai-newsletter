@@ -8,7 +8,7 @@ newsletter:
   reply_to: ""
   # Canal de envío del email: "ghost" (nativo, vía Mailgun) | "mailerlite" | "none" (solo web).
   # "ghost" REQUIERE Mailgun configurado en Ghost ANTES de activarlo (si no, el post queda en draft).
-  email_provider: "none"
+  email_provider: "ghost"   # ACTIVO: cada martes envía el email vía Ghost/Mailgun. Pausar => "none".
   ghost_newsletter_slug: "default-newsletter"   # verificado vía Admin API (newsletter "DevAI Semanal", activo)
 
 sources:
