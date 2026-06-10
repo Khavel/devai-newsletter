@@ -51,6 +51,7 @@ ACCOUNTS = {
         "handle": "@FutProbLab",
         "product": "FutPicks",
         "auth": "oauth1",  # Direct access tokens from dev console
+        "pick_card_url": "https://futpicks.com/api/v1/screenshots/pick/{pick_id}.png",
     },
     "DevAISemanal": {
         "handle": "@DevAISemanal",
@@ -61,6 +62,7 @@ ACCOUNTS = {
         "handle": "@StatLineNerd",
         "product": "NbaPropLab",
         "auth": "oauth2",  # Needs OAuth 2.0 PKCE
+        "pick_card_url": "https://nbaproplab.com/api/v1/screenshots/pick/{pick_id}.png",
     },
 }
 
@@ -210,12 +212,15 @@ def do_oauth2_auth(account: str):
         sys.exit(1)
 
 
-def resolve_image(image: str = None, image_url: str = None, pick_id: int = None) -> str:
+def resolve_image(image: str = None, image_url: str = None, pick_id: int = None,
+                  account: str = None) -> str:
     """Return a local path to the image to attach.
 
     - image:     a local file path (used as-is)
     - image_url: an http(s) URL — downloaded to a temp file
-    - pick_id:   an NbaPropLab pick id — resolves to the public pick-card PNG
+    - pick_id:   a pick id — resolves to the account's public pick-card PNG
+                 (per ACCOUNTS[account]["pick_card_url"]; StatLineNerd -> nbaproplab,
+                 FutProbLab -> futpicks). Defaults to nbaproplab when no account given.
     Returns the local path, or None if nothing was provided.
     """
     if image:
@@ -224,7 +229,12 @@ def resolve_image(image: str = None, image_url: str = None, pick_id: int = None)
         return image
 
     if pick_id and not image_url:
-        image_url = f"https://nbaproplab.com/api/v1/screenshots/pick/{pick_id}.png"
+        template = ACCOUNTS.get(account, {}).get("pick_card_url") if account else None
+        if account and not template:
+            raise RuntimeError(f"account {account} has no pick_card_url; use --image-url instead")
+        if not template:
+            template = "https://nbaproplab.com/api/v1/screenshots/pick/{pick_id}.png"
+        image_url = template.format(pick_id=pick_id)
 
     if image_url:
         r = httpx.get(image_url, timeout=60, follow_redirects=True)
@@ -366,7 +376,8 @@ def main():
     parser.add_argument("--image", help="Local image path to attach")
     parser.add_argument("--image-url", help="Image URL to download and attach")
     parser.add_argument("--pick-id", type=int,
-                        help="NbaPropLab pick id -> attaches its public card PNG")
+                        help="Pick id -> attaches the account's public card PNG "
+                             "(StatLineNerd: nbaproplab, FutProbLab: futpicks)")
     parser.add_argument("--auth", action="store_true",
                         help="Run OAuth 2.0 authorization flow")
     parser.add_argument("--dry-run", action="store_true",
@@ -440,7 +451,7 @@ def main():
     media_ids = None
     if has_media:
         try:
-            image_path = resolve_image(args.image, args.image_url, args.pick_id)
+            image_path = resolve_image(args.image, args.image_url, args.pick_id, args.account)
             print(f"  Uploading media: {image_path}")
             if account_cfg["auth"] == "oauth1":
                 media_id = upload_media_oauth1(args.account, image_path)
