@@ -188,11 +188,30 @@ def post_to_bluesky(account: str, text: str, reply_to: str = None,
                     uri=r["root"]["uri"], cid=r["root"]["cid"]
                 ),
             )
+        # Map facets (links + hashtags) so URLs are clickable and tags indexed.
+        facets = None
+        if rec.get("facets"):
+            facets = []
+            for f in rec["facets"]:
+                features = []
+                for feat in f["features"]:
+                    if feat["$type"] == "app.bsky.richtext.facet#link":
+                        features.append(models.AppBskyRichtextFacet.Link(uri=feat["uri"]))
+                    elif feat["$type"] == "app.bsky.richtext.facet#tag":
+                        features.append(models.AppBskyRichtextFacet.Tag(tag=feat["tag"]))
+                facets.append(models.AppBskyRichtextFacet.Main(
+                    index=models.AppBskyRichtextFacet.ByteSlice(
+                        byte_start=f["index"]["byteStart"], byte_end=f["index"]["byteEnd"]
+                    ),
+                    features=features,
+                ))
+
         record = models.AppBskyFeedPost.Record(
             text=rec["text"],
             created_at=rec["createdAt"],
             reply=reply_ref,
             embed=embed,
+            facets=facets,
         )
 
         resp = client.app.bsky.feed.post.create(did, record)
