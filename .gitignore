@@ -36,6 +36,7 @@ gcp-sa*.json
 
 # GA user OAuth token
 seo/.ga-oauth-token.json
+seo/.ga-oauth-data-token.json
 seo/.ga-adc.json
 
 # YouTube Shorts uploader (OAuth token + client secret + run log)
@@ -83,3 +84,6 @@ seo/*.tmp
 
 # keep .env.example tracked despite .env.* rule above
 !.env.example
+
+# GSC report scratch output
+seo/_gsc_out.log
