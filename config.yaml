@@ -2,6 +2,7 @@ newsletter:
   name: "DevAI"
   tagline: "Herramientas de IA para devs, en español"
   author: "Alex"
+  logo_url: "https://devaisemanal.com/content/images/2026/06/logo-horizontal-light-1.png"
   frequency: "weekly"
   # Email real donde lees las respuestas (idealmente = MAILERLITE_SENDER_EMAIL).
   # El reply-loop depende de esto. Vacío => se oculta el enlace "Responder al editor".

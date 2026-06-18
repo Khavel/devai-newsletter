@@ -23,7 +23,7 @@ _rl = RateLimiter(calls_per_second=1.0)
 _MAILERLITE_API = "https://connect.mailerlite.com/api"
 # Branded DevAI OG card uploaded to Ghost (the real /content/images/ URL is finalized when the
 # default card is uploaded). Per-issue: set DEVAI_FEATURE_IMAGE to the URL from gen_issue_og.py.
-_FEATURE_IMAGE_DEFAULT = "https://devaisemanal.com/content/images/og-default.png"
+_FEATURE_IMAGE_DEFAULT = "https://devaisemanal.com/content/images/2026/06/og-default-1.png"
 _NEWSLETTER_FEATURE_IMAGE = os.getenv("DEVAI_FEATURE_IMAGE", _FEATURE_IMAGE_DEFAULT)
 
 
