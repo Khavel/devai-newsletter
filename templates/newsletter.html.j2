@@ -13,7 +13,7 @@
   <style type="text/css">
     body { margin: 0; padding: 0; background-color: #f1f5f9; }
     img  { border: 0; outline: none; text-decoration: none; }
-    a    { color: #2563eb; }
+    a    { color: #4F46E5; }
     @media only screen and (max-width: 620px) {
       .outer   { padding: 12px 0 !important; }
       .wrapper { width: 100% !important; border-radius: 0 !important; }
@@ -46,26 +46,26 @@
           <!-- │  HEADER                                           │ -->
           <!-- └──────────────────────────────────────────────────┘ -->
           <tr>
-            <td style="background-color:#0f172a;padding:28px 40px;border-radius:8px 8px 0 0;"
+            <td style="background-color:#1E1B4B;padding:28px 40px;border-radius:8px 8px 0 0;"
                 class="pad">
               <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
                 <tr>
                   <td valign="middle">
-                    <!-- Logo: simple SVG wordmark -->
-                    <div style="font-family:'Courier New',Courier,monospace;font-size:26px;
-                                font-weight:700;color:#f8fafc;letter-spacing:-0.5px;line-height:1.2;">
-                      {{ newsletter.name }}
-                    </div>
+                    <!-- Logo -->
+                    <a href="https://devaisemanal.com" style="text-decoration:none;">
+                      <img src="{{ newsletter.logo_url }}" width="200" alt="{{ newsletter.name }}"
+                           style="display:block;border:0;outline:none;height:auto;" />
+                    </a>
                     <div style="font-family:'Courier New',Courier,monospace;font-size:11px;
-                                color:#64748b;margin-top:5px;letter-spacing:0.4px;">
+                                color:#A5B4FC;margin-top:5px;letter-spacing:0.4px;">
                       {{ newsletter.tagline }}
                     </div>
                   </td>
                   <td align="right" valign="top" style="white-space:nowrap;padding-left:16px;">
                     <div style="font-family:'Courier New',Courier,monospace;font-size:11px;
-                                color:#475569;text-align:right;line-height:1.7;">
+                                color:#C7D2FE;text-align:right;line-height:1.7;">
                       {{ date_display }}<br>
-                      <span style="color:#334155;">Edici&oacute;n semanal</span>
+                      <span style="color:#C7D2FE;">Edici&oacute;n semanal</span>
                     </div>
                   </td>
                 </tr>
