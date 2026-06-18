@@ -21,7 +21,10 @@ logger = logging.getLogger(__name__)
 _rl = RateLimiter(calls_per_second=1.0)
 
 _MAILERLITE_API = "https://connect.mailerlite.com/api"
-_NEWSLETTER_FEATURE_IMAGE = "https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=1200&h=628&fit=crop&q=80"
+# Branded DevAI OG card uploaded to Ghost (the real /content/images/ URL is finalized when the
+# default card is uploaded). Per-issue: set DEVAI_FEATURE_IMAGE to the URL from gen_issue_og.py.
+_FEATURE_IMAGE_DEFAULT = "https://devaisemanal.com/content/images/og-default.png"
+_NEWSLETTER_FEATURE_IMAGE = os.getenv("DEVAI_FEATURE_IMAGE", _FEATURE_IMAGE_DEFAULT)
 
 
 def _clamp(text: str, max_len: int) -> str:
