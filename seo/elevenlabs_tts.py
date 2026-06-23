@@ -80,6 +80,7 @@ def cmd_say(args):
         "similarity_boost": args.similarity,
         "style": args.style,
         "use_speaker_boost": True,
+        "speed": args.speed,  # 0.7-1.2 (1.0 = unchanged). >1 = faster/less "slow"; works on all models incl. v3.
     }
     body = {"text": text, "model_id": args.model, "voice_settings": settings}
     url = f"{BASE}/v1/text-to-speech/{args.voice_id}"
@@ -112,6 +113,7 @@ def main():
     ps.add_argument("--stability", type=float, default=0.45)
     ps.add_argument("--similarity", type=float, default=0.8)
     ps.add_argument("--style", type=float, default=0.1)
+    ps.add_argument("--speed", type=float, default=1.0, help="0.7-1.2; >1 speeds up (less 'slow/robotic')")
     ps.add_argument("--output-format", default="mp3_44100_128")
     ps.set_defaults(func=cmd_say)
 
