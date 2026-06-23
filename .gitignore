@@ -87,3 +87,7 @@ seo/*.tmp
 
 # GSC report scratch output
 seo/_gsc_out.log
+
+seo/telegram_invite_links.json
+seo/_dc_*.txt
+seo/discord_post_log.jsonl
