@@ -59,7 +59,7 @@ sources:
       - "mcp"
 
 claude:
-  model: "claude-sonnet-4-20250514"
+  model: "claude-sonnet-4-6"   # was claude-sonnet-4-20250514 (retired by Anthropic -> 404 broke the pipeline 2026-06; update when models are retired)
   max_tokens_curation: 2000
   max_tokens_rewrite: 500
 
