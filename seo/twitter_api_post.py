@@ -45,13 +45,23 @@ ENV_FILE = SCRIPT_DIR / ".env.twitter"
 LOG_FILE = SCRIPT_DIR / "twitter_post_log.jsonl"
 TOKENS_DIR = SCRIPT_DIR / ".twitter-oauth2-tokens"
 
+_URL_RE = __import__("re").compile(r"https?://\S+")
+_TWITTER_URL_LEN = 23
+
+
+def _twitter_len(text: str) -> int:
+    """Twitter weighted character count: SMP codepoints count 2, URLs count 23."""
+    # Replace each URL with a placeholder of the canonical length before counting
+    scrubbed = _URL_RE.sub("x" * _TWITTER_URL_LEN, text)
+    return sum(2 if ord(c) >= 0x10000 else 1 for c in scrubbed)
+
 # Account metadata
 ACCOUNTS = {
     "FutProbLab": {
         "handle": "@FutProbLab",
         "product": "FutPicks",
         "auth": "oauth1",  # Direct access tokens from dev console
-        "pick_card_url": "https://futpicks.com/api/v1/screenshots/pick/{pick_id}.png",
+        "pick_card_url": "https://futpicks.com/cards/{pick_id}.png",
     },
     "DevAISemanal": {
         "handle": "@DevAISemanal",
@@ -63,6 +73,11 @@ ACCOUNTS = {
         "product": "NbaPropLab",
         "auth": "oauth2",  # Needs OAuth 2.0 PKCE
         "pick_card_url": "https://nbaproplab.com/api/v1/screenshots/pick/{pick_id}.png",
+    },
+    "aimodelwatch": {
+        "handle": "@aimodelwatch",
+        "product": "AI Model Watch",
+        "auth": "oauth2",  # OAuth 2.0 PKCE (token: aimodelwatch_token.json)
     },
 }
 
@@ -405,8 +420,11 @@ def main():
         print("ERROR: Tweet text is empty")
         sys.exit(1)
 
-    if len(text) > 280:
-        print(f"WARNING: Tweet is {len(text)} chars (max 280).")
+    weighted = _twitter_len(text)
+    if weighted > 280:
+        print(f"ERROR: Tweet is {weighted} Twitter-chars (max 280). Aborting.")
+        print(f"  (Python len={len(text)}; SMP emoji/chars count as 2, URLs as 23)")
+        sys.exit(1)
 
     OWN_DOMAINS = {
         "StatLineNerd": ["nbaproplab.com", "t.me/nbaproplab_vip"],
