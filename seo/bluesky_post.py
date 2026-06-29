@@ -82,6 +82,14 @@ ACCOUNTS = {
         "own_domains": ["sharpyard.dev", "github.com/Khavel/dotnet-claude-starter",
                         "list.sharpyard.dev"],
     },
+    "LicitaIA": {
+        "handle_env": "LICITAIA_BSKY_HANDLE",
+        "app_password_env": "LICITAIA_BSKY_APP_PASSWORD",
+        "product": "LicitaIA",
+        # Non-gambling SaaS: posts promote the free pliego analyzer + guides, never an
+        # operator. own_domains mirrors products/licitaia/product.yaml.
+        "own_domains": ["licitaia.org"],
+    },
 }
 
 

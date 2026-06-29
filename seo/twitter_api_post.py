@@ -79,6 +79,11 @@ ACCOUNTS = {
         "product": "AI Model Watch",
         "auth": "oauth2",  # OAuth 2.0 PKCE (token: aimodelwatch_token.json)
     },
+    "LicitaIA": {
+        "handle": "@LicitaIA",
+        "product": "LicitaIA",
+        "auth": "oauth2",  # OAuth 2.0 PKCE (token: licitaia_token.json); run --account LicitaIA --auth once
+    },
 }
 
 
@@ -210,21 +215,32 @@ def do_oauth2_auth(account: str):
 
     try:
         token = oauth2.fetch_token(redirect_url)
-        token["expires_at"] = time.time() + token.get("expires_in", 7200)
-
-        token_file = TOKENS_DIR / f"{account.lower()}_token.json"
-        with open(token_file, "w") as f:
-            json.dump(token, f, indent=2)
-
-        # Verify by getting user info
-        client = tweepy.Client(token["access_token"])
-        me = client.get_me()
-        print(f"\n✅ Authorized as @{me.data.username}")
-        print(f"   Token saved to {token_file}")
-        print(f"   Token expires in {token.get('expires_in', '?')}s (auto-refreshes)")
     except Exception as e:
-        print(f"\n❌ Authorization failed: {e}")
+        print(f"\n❌ Token exchange failed: {e}")
         sys.exit(1)
+
+    token["expires_at"] = time.time() + token.get("expires_in", 7200)
+    token_file = TOKENS_DIR / f"{account.lower()}_token.json"
+    with open(token_file, "w") as f:
+        json.dump(token, f, indent=2)
+    print(f"\n✅ Token saved to {token_file}")
+    print(f"   Token expires in {token.get('expires_in', '?')}s (auto-refreshes)")
+
+    # Best-effort verification via the SAME bearer path the poster uses. A hiccup here
+    # does NOT mean auth failed — the saved token above is what posting uses — so never
+    # exit non-zero on it. (The old code did tweepy.Client(token).get_me(), which wrongly
+    # falls into an OAuth1 path and raised "Consumer key ... NoneType" AFTER the token was
+    # already saved, reporting a false "Authorization failed".)
+    try:
+        import httpx as _httpx
+        r = _httpx.get(
+            "https://api.x.com/2/users/me",
+            headers={"Authorization": f"Bearer {token['access_token']}"}, timeout=10,
+        )
+        if r.status_code == 200:
+            print(f"   Verified live as @{r.json()['data']['username']}")
+    except Exception:
+        pass
 
 
 def resolve_image(image: str = None, image_url: str = None, pick_id: int = None,
