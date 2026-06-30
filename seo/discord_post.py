@@ -68,7 +68,8 @@ def load_env():
 def _payload_lint_text(payload: dict) -> str:
     """Concatenate every human-readable string in a Discord webhook payload (content + embed
     author/title/description/fields/footer + poll question/answers) so the F1 lint covers
-    embeds, not just plain content. Twin of futpicks_discord_feed._embed_text - keep in sync."""
+    embeds, not just plain content. Mirrors the field walk in the FutPicks builder's _embed_text
+    helper (defined separately in lib/futpicks_discord_feed.py); keep the two in sync."""
     parts = [payload.get("content") or ""]
     for e in payload.get("embeds") or []:
         parts.append((e.get("author") or {}).get("name") or "")
@@ -210,15 +211,20 @@ def main():
 
     payload = None
     if a.payload:
-        payload = json.loads(Path(a.payload).read_text(encoding="utf-8"))
+        try:
+            payload = json.loads(Path(a.payload).read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as e:
+            print(f"ERROR: --payload not valid JSON: {e}"); sys.exit(2)
+        if not payload:
+            print("ERROR: --payload file is empty"); sys.exit(2)
         if a.username:
             payload.setdefault("username", a.username)
-        content = _payload_lint_text(payload)
+        content = _payload_lint_text(payload)   # may be "" for image-only payloads; that's fine
     else:
         content = a.content if a.content else (
             Path(a.file).read_text(encoding="utf-8").strip() if a.file else "")
-    if not content:
-        print("ERROR: --content, --file or --payload required"); sys.exit(2)
+        if not content:
+            print("ERROR: --content or --file required"); sys.exit(2)
 
     # F1 lint (single source of truth) over ALL posted text (content OR full payload).
     if guardrails is not None:
@@ -255,7 +261,7 @@ def main():
         except Exception:
             pass
         print(f"  Sent (status {res.get('status')}, msg id {link or '?'})")
-        log_post(a.product, content, link, media=bool(a.image))
+        log_post(a.product, content, link, media=bool(a.image or a.payload))
         record_run(a.product, link)
     else:
         print(f"  Failed: {res['error']}")
