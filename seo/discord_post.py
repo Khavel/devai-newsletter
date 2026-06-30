@@ -65,6 +65,26 @@ def load_env():
     return env
 
 
+def _payload_lint_text(payload: dict) -> str:
+    """Concatenate every human-readable string in a Discord webhook payload (content + embed
+    author/title/description/fields/footer + poll question/answers) so the F1 lint covers
+    embeds, not just plain content. Twin of futpicks_discord_feed._embed_text - keep in sync."""
+    parts = [payload.get("content") or ""]
+    for e in payload.get("embeds") or []:
+        parts.append((e.get("author") or {}).get("name") or "")
+        parts.append(e.get("title") or "")
+        parts.append(e.get("description") or "")
+        parts.append((e.get("footer") or {}).get("text") or "")
+        for f in e.get("fields") or []:
+            parts.append(f.get("name") or "")
+            parts.append(f.get("value") or "")
+    poll = payload.get("poll") or {}
+    parts.append((poll.get("question") or {}).get("text") or "")
+    for a in poll.get("answers") or []:
+        parts.append((a.get("poll_media") or {}).get("text") or "")
+    return "\n".join(p for p in parts if p)
+
+
 def get_webhook(key: str):
     env = load_env()
     url = env.get(key) or os.getenv(key)
@@ -103,6 +123,15 @@ def send_text(webhook: str, content: str, username: str, image_url: str = None):
         payload["username"] = username
     if image_url:
         payload["embeds"] = [{"image": {"url": image_url}}]
+    data = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(webhook + "?wait=true", data=data,
+                                headers={"Content-Type": "application/json", "User-Agent": USER_AGENT})
+    return _post(req)
+
+
+def send_payload(webhook: str, payload: dict):
+    """Post a full Discord webhook JSON payload (embeds and/or poll) as-is."""
+    payload.setdefault("allowed_mentions", {"parse": []})
     data = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(webhook + "?wait=true", data=data,
                                 headers={"Content-Type": "application/json", "User-Agent": USER_AGENT})
@@ -175,13 +204,23 @@ def main():
     ap.add_argument("--image-url", dest="image_url", help="public image URL (embed)")
     ap.add_argument("--username", help="override webhook display name")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--payload", help="path to a Discord webhook JSON payload (embeds/poll); "
+                                      "overrides --content/--image")
     a = ap.parse_args()
 
-    content = a.content if a.content else (Path(a.file).read_text(encoding="utf-8").strip() if a.file else "")
+    payload = None
+    if a.payload:
+        payload = json.loads(Path(a.payload).read_text(encoding="utf-8"))
+        if a.username:
+            payload.setdefault("username", a.username)
+        content = _payload_lint_text(payload)
+    else:
+        content = a.content if a.content else (
+            Path(a.file).read_text(encoding="utf-8").strip() if a.file else "")
     if not content:
-        print("ERROR: --content or --file required"); sys.exit(2)
+        print("ERROR: --content, --file or --payload required"); sys.exit(2)
 
-    # F1 lint (single source of truth) — own CTAs OK, operator links/guarantee BLOCKED.
+    # F1 lint (single source of truth) over ALL posted text (content OR full payload).
     if guardrails is not None:
         violations = guardrails.lint_text(content, own_domains=OWN_DOMAINS[a.product])
         if violations:
@@ -190,17 +229,18 @@ def main():
                 print(f"  - {v}")
             sys.exit(3)
     else:
-        print("WARN: guardrails not importable — manual F1 review required before relying on this.")
+        print("WARN: guardrails not importable - manual F1 review required before relying on this.")
 
     if a.dry_run:
         print(f"[DRY RUN] product={a.product} webhook-env={a.webhook_env}")
-        if a.image: print(f"[DRY RUN] image={a.image}")
-        if a.image_url: print(f"[DRY RUN] image_url={a.image_url}")
-        print("[DRY RUN] content:\n" + content)
+        if a.payload: print("[DRY RUN] payload:\n" + json.dumps(payload, ensure_ascii=False, indent=2))
+        else: print("[DRY RUN] content:\n" + content)
         return
 
     webhook = get_webhook(a.webhook_env)
-    if a.image:
+    if a.payload:
+        res = send_payload(webhook, payload)
+    elif a.image:
         res = send_image(webhook, content, a.username, a.image)
     else:
         res = send_text(webhook, content, a.username, a.image_url)
