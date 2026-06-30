@@ -233,8 +233,12 @@ def main():
 
     if a.dry_run:
         print(f"[DRY RUN] product={a.product} webhook-env={a.webhook_env}")
-        if a.payload: print("[DRY RUN] payload:\n" + json.dumps(payload, ensure_ascii=False, indent=2))
-        else: print("[DRY RUN] content:\n" + content)
+        if a.payload:
+            print("[DRY RUN] payload:\n" + json.dumps(payload, ensure_ascii=False, indent=2))
+        else:
+            if a.image: print(f"[DRY RUN] image={a.image}")
+            if a.image_url: print(f"[DRY RUN] image_url={a.image_url}")
+            print("[DRY RUN] content:\n" + content)
         return
 
     webhook = get_webhook(a.webhook_env)
