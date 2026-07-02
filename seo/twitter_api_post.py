@@ -36,6 +36,13 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
     except Exception:
         pass
 
+# X can grant fewer scopes than we request (e.g. it dropped media.write for some
+# apps). oauthlib raises "Scope has changed from ... to ..." on that mismatch during
+# a token refresh and aborts. Relaxing this makes the refresh accept the scopes X
+# actually returned instead of crashing. Must be set before oauthlib validates the
+# token response. See OAUTH2_SCOPES below (single source of truth for both flows).
+os.environ.setdefault("OAUTHLIB_RELAX_TOKEN_SCOPE", "1")
+
 import httpx
 import tweepy
 from dotenv import load_dotenv
@@ -43,6 +50,12 @@ from dotenv import load_dotenv
 SCRIPT_DIR = Path(__file__).parent
 ENV_FILE = SCRIPT_DIR / ".env.twitter"
 LOG_FILE = SCRIPT_DIR / "twitter_post_log.jsonl"
+
+# Single source of truth for the OAuth 2.0 scopes we request in BOTH the initial
+# --auth flow and the refresh path, so they can never drift apart (that drift is
+# what caused the LicitaIA refresh crash). media.write is intentionally omitted:
+# X no longer grants it to these apps and this posting path is text-only.
+OAUTH2_SCOPES = ["tweet.read", "tweet.write", "users.read", "offline.access"]
 TOKENS_DIR = SCRIPT_DIR / ".twitter-oauth2-tokens"
 
 _URL_RE = __import__("re").compile(r"https?://\S+")
@@ -147,7 +160,7 @@ def get_oauth2_client(account: str) -> tweepy.Client:
             client_id=client_id,
             client_secret=client_secret,
             redirect_uri="https://localhost:3000/callback",
-            scope=["tweet.read", "tweet.write", "users.read", "media.write", "offline.access"],
+            scope=OAUTH2_SCOPES,
         )
         try:
             new_token = oauth2.refresh_token(
@@ -195,7 +208,7 @@ def do_oauth2_auth(account: str):
         client_id=client_id,
         client_secret=client_secret,
         redirect_uri="https://localhost:3000/callback",
-        scope=["tweet.read", "tweet.write", "users.read", "offline.access"],
+        scope=OAUTH2_SCOPES,
     )
 
     auth_url = oauth2.get_authorization_url()

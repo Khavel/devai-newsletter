@@ -6,10 +6,14 @@ Step 2: python oauth2_exchange.py exchange <redirect_url>  -> exchanges code for
 import sys
 sys.stdout.reconfigure(encoding="utf-8")
 
+import os
+# Accept whatever scopes X actually grants on refresh (it may drop media.write)
+# instead of crashing on a mismatch. Must be set before oauthlib validates.
+os.environ.setdefault("OAUTHLIB_RELAX_TOKEN_SCOPE", "1")
+
 import tweepy
 import json
 import time
-import os
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -23,7 +27,9 @@ load_dotenv(ENV_FILE)
 CLIENT_ID = os.getenv("TWITTER_CLIENT_ID")
 CLIENT_SECRET = os.getenv("TWITTER_CLIENT_SECRET")
 REDIRECT_URI = "https://localhost:3000/callback"
-SCOPES = ["tweet.read", "tweet.write", "users.read", "media.write", "offline.access"]
+# Keep in sync with twitter_api_post.py OAUTH2_SCOPES. media.write omitted: X no
+# longer grants it to these apps and posting here is text-only.
+SCOPES = ["tweet.read", "tweet.write", "users.read", "offline.access"]
 
 
 def generate():
