@@ -41,6 +41,7 @@ OWN_DOMAINS = {
     "futpicks": ["futpicks.com", "t.me/futpicks_vip"],
     "devaisemanal": ["devaisemanal.com"],
     "sharpyard": ["sharpyard.dev", "github.com/Khavel/dotnet-claude-starter"],
+    "licitaia": ["licitaia.org"],
 }
 
 
