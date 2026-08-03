@@ -90,7 +90,7 @@ Articles published on devaisemanal.com (Ghost) are automatically cross-posted to
 
 ## Environment & Secrets
 
-- `.env` — ANTHROPIC_API_KEY, BEEHIIV_*, TELEGRAM_* (newsletter pipeline)
+- `.env` — ANTHROPIC_API_KEY, MAILERLITE_*, TELEGRAM_* (newsletter pipeline) (corrected 2026-08-02: this line said `BEEHIIV_*`, but the live email platform is **MailerLite** — verified in `.env.example`, `src/publishing.py`, and `.github/workflows/newsletter.yml`, all MAILERLITE_*. No BEEHIIV_* var is read anywhere; the only leftover "Beehiiv" mention is a stale docstring in `run.py`.)
 - `seo/.env.twitter` — All Twitter/X API credentials (OAuth 1.0a + OAuth 2.0)
 - `seo/.twitter-oauth2-tokens/` — OAuth 2.0 PKCE tokens per account (auto-refresh)
 - `seo/.ga-oauth-token.json`, `seo/.ga-adc.json` — GA4 user OAuth token + ADC (gitignored)
@@ -112,6 +112,6 @@ Task files live in `C:\Users\ceja_\.claude\scheduled-tasks\<task-id>\SKILL.md`.
 
 - **Windows environment** — Spanish locale (es-ES). Use PowerShell for shell commands.
 - **Python 3.12** — venv at project root
-- **Claude model** — `claude-sonnet-4-20250514` for pipeline, configured in config.yaml
+- **Claude model** — `claude-sonnet-4-6` for pipeline (corrected 2026-08-02: the old pin `claude-sonnet-4-20250514` was retired by Anthropic and its 404 broke the pipeline in 2026-06). **`config.yaml` is the source of truth for the model id** — always read it there; do not trust this line if they ever diverge.
 - **Anti-detection** — Never cross-reference the 3 Twitter accounts. No RT/like between them.
 - **Phone number** — All 3 Twitter accounts share phone 696295730. Risk of linked suspension.
