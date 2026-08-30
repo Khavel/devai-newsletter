@@ -91,3 +91,25 @@ seo/_gsc_out.log
 seo/telegram_invite_links.json
 seo/_dc_*.txt
 seo/discord_post_log.jsonl
+
+# --- Añadido 2026-08-30: huecos reales detectados al commitear 27 dias de trabajo ---
+# Clave de service account GA4 (viva). El patron *.gcp-sa.json NO la cubria.
+seo/.ga-service-account.json
+seo/.ga-adc.json*
+# Perfiles de navegador de Reddit: sesiones activas + ~116 MB. El patron
+# .twitter-profile-* existia, el equivalente de Reddit no.
+seo/.reddit-profile-*/
+seo/.reddit-browse-out-*.json
+seo/.reddit-promo-research.json
+seo/.reddit-comment-draft-*.txt
+# Scratch de crosspost/borradores: efimero por diseno, no es fuente.
+_*
+seo/_*
+seo/.tmp_*
+seo/tweet_*.txt
+seo/*_draft.txt
+seo/*_draft_tmp.txt
+seo/devai_tweet.txt
+seo/fut_tweet.txt
+seo/stat_tweet_*.txt
+seo/setup_output.txt
