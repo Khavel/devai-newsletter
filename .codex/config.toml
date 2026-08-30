@@ -1,0 +1,7 @@
+# Project defaults for DevAI publication automations.
+# Automations inherit the default sandbox for the selected project.
+sandbox_mode = "danger-full-access"
+approval_policy = "never"
+
+[sandbox_workspace_write]
+network_access = true
