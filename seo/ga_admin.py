@@ -14,6 +14,17 @@ Usage:
       find-or-create a WEB data stream for the domain. Prints the Measurement ID.
       Idempotent: re-running never duplicates; it reuses matches by name/domain.
 
+  python ga_admin.py keyevents --property 539660132
+      List every Key Event (conversion event) configured on a property.
+
+  python ga_admin.py keyevent --property 539660132 --event sign_up
+      Find-or-create a Key Event for the given event name (idempotent: if the
+      event is already a key event it is left untouched). This is the KPI's
+      measurement primitive for DevAI Semanal (the Ghost portal signup fires
+      `sign_up`). NOTE: this only marks an *already-collected* event as a key
+      event; the event itself must be emitted by the site (Ghost portal form
+      submit) — GA4 cannot synthesize an event that the site never sends.
+
 Scope used: analytics.edit (read + write config). No data is ever deleted.
 """
 import sys, os, argparse
@@ -145,6 +156,38 @@ def set_retention(c, months=14):
                 print(f"SKIP «{p.display_name}» (not editable by this user)")
 
 
+def list_key_events(c, prop):
+    parent = prop if str(prop).startswith("properties/") else f"properties/{prop}"
+    print(f"=== KEY EVENTS for {parent}")
+    any_ = False
+    for ke in c.list_key_events(parent=parent):
+        any_ = True
+        print(f"  - {ke.event_name!r:24} counting={ke.counting_method.name:16} "
+              f"custom={ke.custom}  deletable={ke.deletable}")
+    if not any_:
+        print("  (none configured)")
+
+
+def ensure_key_event(c, prop, event):
+    """Find-or-create a key event by event name. Idempotent."""
+    from google.analytics.admin_v1alpha import KeyEvent
+    parent = prop if str(prop).startswith("properties/") else f"properties/{prop}"
+    for ke in c.list_key_events(parent=parent):
+        if ke.event_name == event:
+            print(f"found existing key event: {event!r} "
+                  f"(counting={ke.counting_method.name}, custom={ke.custom})")
+            return ke.name
+    created = c.create_key_event(
+        parent=parent,
+        key_event=KeyEvent(
+            event_name=event,
+            counting_method=KeyEvent.CountingMethod.ONCE_PER_EVENT))
+    print(f"CREATED key event: {event!r} -> {created.name}")
+    print("  NOTE: this only marks the event as a conversion; the site must "
+          "actually emit it for it to count.")
+    return created.name
+
+
 def main():
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -156,12 +199,21 @@ def main():
     e.add_argument("--domain", required=True, help="e.g. devaisemanal.com")
     e.add_argument("--timezone", default="Europe/Madrid")
     e.add_argument("--currency", default="EUR")
+    ke = sub.add_parser("keyevents")   # list key events on a property
+    ke.add_argument("--property", required=True, help="GA4 property ID (digits)")
+    kc = sub.add_parser("keyevent")    # find-or-create one key event
+    kc.add_argument("--property", required=True, help="GA4 property ID (digits)")
+    kc.add_argument("--event", required=True, help="event name, e.g. sign_up")
     a = ap.parse_args()
     c = client()
     if a.cmd == "list":
         list_all(c)
     elif a.cmd == "retention":
         set_retention(c)
+    elif a.cmd == "keyevents":
+        list_key_events(c, a.property)
+    elif a.cmd == "keyevent":
+        ensure_key_event(c, a.property, a.event)
     else:
         ensure(c, a.account, a.name, a.domain, a.timezone, a.currency)
 

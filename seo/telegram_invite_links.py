@@ -1,8 +1,11 @@
 """Create one NAMED invite link per source surface for a Telegram channel.
 
-Telegram tracks joins per invite link (member_count on getChatInviteLink), so a named link
-per surface gives joins-by-source with zero UTM machinery for the Telegram hop. Run ONCE per
-channel (each call to createChatInviteLink mints a NEW link); re-running mints duplicates.
+Telegram tracks joins per invite link, so a named link per surface gives joins-by-source with
+zero UTM machinery for the Telegram hop. NOTE: per-link join counts are visible ONLY in the
+Telegram app (Manage -> Invite Links -> "N joined"); the Bot API has NO getter for them
+(getChatInviteLink is not a method -> returns "Not Found"; getChatMemberCount returns the
+channel TOTAL only). Run ONCE per channel (each call to createChatInviteLink mints a NEW link);
+re-running mints duplicates.
 
 Usage:
   python telegram_invite_links.py --channel fut   [--dry-run]

@@ -93,7 +93,13 @@ def build_payload(text, networks, media_url, title, when, auto_publish, draft=Fa
     providers = [{"network": n} for n in networks]
     nd = {}
     if "instagram" in networks:
-        nd["instagramData"] = {"autoPublish": True, "type": "REEL" if media_url else "POST"}
+        # Reel vs feed POST is decided by the MEDIA TYPE, not merely "has media": a still image
+        # published as a REEL is rejected by Instagram at publish time. Detect video by extension
+        # (reel routines pass .mp4/.mov; image-card routines pass .png/.jpg) so the payload is
+        # self-describing rather than assuming every media URL is a video.
+        _mu = (media_url or "").lower().split("?")[0]
+        _is_video = _mu.endswith((".mp4", ".mov", ".m4v", ".webm"))
+        nd["instagramData"] = {"autoPublish": True, "type": "REEL" if _is_video else "POST"}
     if "youtube" in networks:
         nd["youtubeData"] = {"title": (title or text[:90]), "type": "SHORT", "madeForKids": False}
     if "tiktok" in networks:

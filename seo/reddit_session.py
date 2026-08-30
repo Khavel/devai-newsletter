@@ -317,6 +317,31 @@ def do_delete(page, thing_id):
     return f"ERROR: {result.get('error', 'unknown')}"
 
 
+def do_karma(page):
+    """Read the logged-in account's karma/age from the authenticated session.
+
+    The public /user/<u>/about.json now 403s for unauthenticated callers, so we
+    fetch it from inside the old.reddit.com page context (cookies => same-origin).
+    Returns a one-line OK with comment/link karma and account age in days.
+    """
+    _ensure_old_reddit(page)
+    data = page.evaluate("""(username) => {
+        return fetch('https://old.reddit.com/user/' + username + '/about.json',
+                     {credentials: 'same-origin', headers: {'Accept': 'application/json'}})
+            .then(r => r.ok ? r.json() : {error: 'HTTP ' + r.status})
+            .catch(e => ({error: e.message}));
+    }""", USERNAME)
+    if not isinstance(data, dict) or data.get("error"):
+        return f"ERROR: karma read failed ({(data or {}).get('error', 'unknown')})"
+    d = (data.get("data") or {})
+    ck = d.get("comment_karma", 0)
+    lk = d.get("link_karma", 0)
+    created = d.get("created_utc", 0)
+    age_days = int((time.time() - created) / 86400) if created else 0
+    return (f"OK: u/{USERNAME} comment_karma={ck} link_karma={lk} "
+            f"total={ck + lk} age_days={age_days}")
+
+
 def run_command(page, cmd_str):
     """Parse and execute a command string."""
     parts = cmd_str.strip().split(maxsplit=1)
@@ -324,6 +349,9 @@ def run_command(page, cmd_str):
         return "ERROR: Empty command"
 
     action = parts[0].lower()
+
+    if action == "karma":
+        return do_karma(page)
 
     if action == "comment" and len(parts) > 1:
         rest = parts[1].split(maxsplit=1)

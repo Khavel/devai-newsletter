@@ -5,9 +5,9 @@ sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 from reddit_session import sync_playwright, PROFILE_DIR
 
 TARGETS = [
-    ("ClaudeAI", "1tsp83h"),
-    ("microsaas", "1tsgpi1"),
-    ("Python", "1ts5bgw"),
+    ("ClaudeAI", "1tvit8l"),
+    ("microsaas", "1tvi953"),
+    ("webdev", "1tvguei"),
 ]
 OUT = Path(__file__).parent / ".reddit-detail-out.json"
 
@@ -31,7 +31,10 @@ def main():
         for sub, pid in TARGETS:
             res = page_fetch_json(page, f"https://old.reddit.com/r/{sub}/comments/{pid}.json?limit=30&sort=top&raw_json=1")
             comments = []
+            post = {}
             try:
+                pd = res["data"][0]["data"]["children"][0]["data"]
+                post = {"title": pd.get("title"), "author": pd.get("author"), "selftext": pd.get("selftext")}
                 for ch in res["data"][1]["data"]["children"]:
                     if ch.get("kind") != "t1":
                         continue
@@ -39,17 +42,21 @@ def main():
                     comments.append({"author": cd.get("author"), "score": cd.get("score"), "body": (cd.get("body") or "")[:600]})
             except Exception as e:
                 comments.append({"error": str(e)})
-            out[pid] = comments
+            out[pid] = {"post": post, "comments": comments}
             time.sleep(1.5)
         ctx.close()
     OUT.write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"Wrote {OUT}")
-    for pid, cs in out.items():
-        print(f"\n=== {pid} ({len(cs)} top comments) ===")
-        for c in cs[:8]:
+    for pid, d in out.items():
+        post = d.get("post", {})
+        cs = d.get("comments", [])
+        print(f"\n=== {pid}: {post.get('title')} (by {post.get('author')}, {len(cs)} top comments) ===")
+        print("POST:", (post.get("selftext") or "")[:1200])
+        print("--- comments ---")
+        for c in cs[:10]:
             if "error" in c:
                 print("  ERR", c["error"]); continue
-            print(f"  [{c['score']}] {c['author']}: {c['body'][:200]}")
+            print(f"  [{c['score']}] {c['author']}: {c['body'][:250]}")
 
 
 if __name__ == "__main__":

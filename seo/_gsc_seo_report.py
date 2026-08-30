@@ -16,7 +16,9 @@ SCOPES = ["https://www.googleapis.com/auth/webmasters"]
 TOKEN = ROOT / "token-webmasters.json"
 CLIENT = ROOT / "gsc-oauth-client.json"
 SITES = ["https://devaisemanal.com/", "https://nbaproplab.com/", "https://futpicks.com/",
-         "sc-domain:sharpyard.dev"]
+         "sc-domain:sharpyard.dev", "sc-domain:tpv-top.com", "sc-domain:aimodelwatch.dev"]
+# aimodelwatch.dev GSC ownership verified 2026-06-29 (DNS provider / Cloudflare auto-TXT),
+# sitemap-index.xml submitted + read OK; now included in the weekly pull.
 
 
 def creds():

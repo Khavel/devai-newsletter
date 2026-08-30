@@ -6,11 +6,17 @@ from reddit_session import sync_playwright, PROFILE_DIR
 
 # (sub, post_id, our_comment_fullname)
 TARGETS = [
-    ("Python", "1tromoz", "t1_ooq7x2h"),
-    ("microsaas", "1tq1u0h", "t1_ooj7bou"),
-    ("ClaudeAI", "1tsp83h", "t1_oowqiub"),
-    ("microsaas", "1tsgpi1", "t1_oowqplu"),
-    ("Python", "1ts5bgw", "t1_oowqwqq"),
+    # 06-07 replies
+    ("microsaas", "1tvi953", "t1_oq8fbac"),  # reply: JSONL test cases subset
+    ("ClaudeAI", "1tyb7p2", "t1_oq8fdgk"),  # reply: grep-check file refs
+    # 06-07 fresh comments
+    ("ClaudeAI", "1tz5urz", "t1_oq8fewf"),  # prompting resources Simon Willison
+    ("microsaas", "1tz5cgm", "t1_oq8fgon"), # two channels is right when solo
+    # 06-06 fresh (score update)
+    ("ClaudeAI", "1tyb7p2", "t1_oq231ad"),  # memory scoping (score 3 yesterday)
+    ("microsaas", "1txobhn", "t1_oq232kk"), # agent reliability cliff
+    # mega-hit tracking
+    ("Python", "1txe1o0", "t1_opva08v"),     # uv/pydantic v2 (score 82 yesterday)
 ]
 OUT = Path(__file__).parent / ".reddit-replies-out.json"
 
