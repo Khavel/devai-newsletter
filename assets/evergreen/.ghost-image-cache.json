@@ -1,0 +1,272 @@
+{
+  "assets/evergreen/busqueda-hibrida-rag-bm25-vectorial-reranking/architecture.png": {
+    "mtime_ns": 1784704086401960500,
+    "size": 1082631,
+    "url": "https://devaisemanal.com/content/images/2026/07/architecture-6.png"
+  },
+  "assets/evergreen/busqueda-hibrida-rag-bm25-vectorial-reranking/feature.png": {
+    "mtime_ns": 1784703990124501800,
+    "size": 1507136,
+    "url": "https://devaisemanal.com/content/images/2026/07/feature-6.png"
+  },
+  "assets/evergreen/cloudflare-agents-sdk-durable-objects/architecture.png": {
+    "mtime_ns": 1782889727191375100,
+    "size": 89909,
+    "url": "https://devaisemanal.com/content/images/2026/07/architecture.png"
+  },
+  "assets/evergreen/cloudflare-agents-sdk-durable-objects/feature.png": {
+    "mtime_ns": 1782889727123357500,
+    "size": 61765,
+    "url": "https://devaisemanal.com/content/images/2026/07/feature.png"
+  },
+  "assets/evergreen/codex-cli-configuracion-agents-md-permisos/architecture.png": {
+    "mtime_ns": 1787123118698753600,
+    "size": 963592,
+    "url": "https://devaisemanal.com/content/images/2026/08/architecture-5.png"
+  },
+  "assets/evergreen/codex-cli-configuracion-agents-md-permisos/feature.png": {
+    "mtime_ns": 1787123079286789100,
+    "size": 1776780,
+    "url": "https://devaisemanal.com/content/images/2026/08/feature-5.png"
+  },
+  "assets/evergreen/codex-skills-workflows-reutilizables/architecture.png": {
+    "mtime_ns": 1787900642002665100,
+    "size": 899861,
+    "url": "https://devaisemanal.com/content/images/2026/08/architecture-9.png"
+  },
+  "assets/evergreen/codex-skills-workflows-reutilizables/feature.png": {
+    "mtime_ns": 1787900593572066500,
+    "size": 1393659,
+    "url": "https://devaisemanal.com/content/images/2026/08/feature-9.png"
+  },
+  "assets/evergreen/copilot-spaces-capas-contexto-agentes/context-layers.png": {
+    "mtime_ns": 1782208294537723400,
+    "size": 101067,
+    "url": "https://devaisemanal.com/content/images/2026/06/context-layers.png"
+  },
+  "assets/evergreen/copilot-spaces-capas-contexto-agentes/feature.png": {
+    "mtime_ns": 1782208241409528500,
+    "size": 55918,
+    "url": "https://devaisemanal.com/content/images/2026/06/feature-3.png"
+  },
+  "assets/evergreen/docker-mcp-toolkit-agentes-locales/architecture.png": {
+    "mtime_ns": 1782025759415223500,
+    "size": 119617,
+    "url": "https://devaisemanal.com/content/images/2026/06/architecture-1.png"
+  },
+  "assets/evergreen/docker-mcp-toolkit-agentes-locales/feature.png": {
+    "mtime_ns": 1782025585556045600,
+    "size": 1383472,
+    "url": "https://devaisemanal.com/content/images/2026/06/feature-1.png"
+  },
+  "assets/evergreen/evaluacion-rag-produccion-metricas-datasets/architecture.png": {
+    "mtime_ns": 1783235298951265000,
+    "size": 64233,
+    "url": "https://devaisemanal.com/content/images/2026/07/architecture-2.png"
+  },
+  "assets/evergreen/evaluacion-rag-produccion-metricas-datasets/feature.png": {
+    "mtime_ns": 1783235298888544800,
+    "size": 36149,
+    "url": "https://devaisemanal.com/content/images/2026/07/feature-2.png"
+  },
+  "assets/evergreen/git-worktree-agentes-ia-paralelo/architecture.png": {
+    "mtime_ns": 1787727843280974300,
+    "size": 1235805,
+    "url": "https://devaisemanal.com/content/images/2026/08/architecture-8.png"
+  },
+  "assets/evergreen/git-worktree-agentes-ia-paralelo/feature.png": {
+    "mtime_ns": 1787727773720688100,
+    "size": 1720225,
+    "url": "https://devaisemanal.com/content/images/2026/08/feature-8.png"
+  },
+  "assets/evergreen/github-agent-finder-ard-copilot/architecture.png": {
+    "mtime_ns": 1782207541994542900,
+    "size": 96254,
+    "url": "https://devaisemanal.com/content/images/2026/06/architecture-2.png"
+  },
+  "assets/evergreen/github-agent-finder-ard-copilot/feature.png": {
+    "mtime_ns": 1782207574971825800,
+    "size": 61573,
+    "url": "https://devaisemanal.com/content/images/2026/06/feature-2.png"
+  },
+  "assets/evergreen/google-adk-agentes-python-produccion/architecture.png": {
+    "mtime_ns": 1782457606324158700,
+    "size": 107175,
+    "url": "https://devaisemanal.com/content/images/2026/06/architecture-4.png"
+  },
+  "assets/evergreen/google-adk-agentes-python-produccion/feature.png": {
+    "mtime_ns": 1782457651885159900,
+    "size": 85555,
+    "url": "https://devaisemanal.com/content/images/2026/06/feature-5.png"
+  },
+  "assets/evergreen/langgraph-agentes-python-estado-produccion/architecture.png": {
+    "mtime_ns": 1782630565816111500,
+    "size": 50521,
+    "url": "https://devaisemanal.com/content/images/2026/06/architecture-5.png"
+  },
+  "assets/evergreen/langgraph-agentes-python-estado-produccion/feature.png": {
+    "mtime_ns": 1782630603307164900,
+    "size": 42851,
+    "url": "https://devaisemanal.com/content/images/2026/06/feature-6.png"
+  },
+  "assets/evergreen/litellm-proxy-gateway-llm-costes/architecture.png": {
+    "mtime_ns": 1781852777272497500,
+    "size": 100620,
+    "url": "https://devaisemanal.com/content/images/2026/06/architecture.png"
+  },
+  "assets/evergreen/litellm-proxy-gateway-llm-costes/feature.png": {
+    "mtime_ns": 1781852746146866600,
+    "size": 43298,
+    "url": "https://devaisemanal.com/content/images/2026/06/feature.png"
+  },
+  "assets/evergreen/llms-txt-guia-devs-ia-buscadores/architecture.png": {
+    "mtime_ns": 1783839983355804500,
+    "size": 96630,
+    "url": "https://devaisemanal.com/content/images/2026/07/architecture-4.png"
+  },
+  "assets/evergreen/llms-txt-guia-devs-ia-buscadores/feature.png": {
+    "mtime_ns": 1783840021320257700,
+    "size": 44432,
+    "url": "https://devaisemanal.com/content/images/2026/07/feature-4.png"
+  },
+  "assets/evergreen/mcp-apps-ui-interactiva-agentes/architecture.png": {
+    "mtime_ns": 1785258682027898300,
+    "size": 1124322,
+    "url": "https://devaisemanal.com/content/images/2026/07/architecture-8.png"
+  },
+  "assets/evergreen/mcp-apps-ui-interactiva-agentes/feature.png": {
+    "mtime_ns": 1785258588600200600,
+    "size": 1461171,
+    "url": "https://devaisemanal.com/content/images/2026/07/feature-8.png"
+  },
+  "assets/evergreen/mcp-inspector-testing-servidores/architecture.png": {
+    "mtime_ns": 1787295873347350300,
+    "size": 1016472,
+    "url": "https://devaisemanal.com/content/images/2026/08/architecture-6.png"
+  },
+  "assets/evergreen/mcp-inspector-testing-servidores/feature.png": {
+    "mtime_ns": 1787295818189852300,
+    "size": 1624235,
+    "url": "https://devaisemanal.com/content/images/2026/08/feature-6.png"
+  },
+  "assets/evergreen/mcp-registry-publicar-descubrir-servidores/architecture.png": {
+    "mtime_ns": 1786518339223382300,
+    "size": 1340521,
+    "url": "https://devaisemanal.com/content/images/2026/08/architecture-3.png"
+  },
+  "assets/evergreen/mcp-registry-publicar-descubrir-servidores/feature.png": {
+    "mtime_ns": 1786518269318926600,
+    "size": 2038140,
+    "url": "https://devaisemanal.com/content/images/2026/08/feature-3.png"
+  },
+  "assets/evergreen/memoria-agentes-ia-produccion-privacidad/architecture.png": {
+    "mtime_ns": 1788073513435236600,
+    "size": 986632,
+    "url": "https://devaisemanal.com/content/images/2026/08/architecture-10.png"
+  },
+  "assets/evergreen/memoria-agentes-ia-produccion-privacidad/feature.png": {
+    "mtime_ns": 1788073468879206100,
+    "size": 1780628,
+    "url": "https://devaisemanal.com/content/images/2026/08/feature-10.png"
+  },
+  "assets/evergreen/microsoft-foundry-agent-service-produccion/architecture.png": {
+    "mtime_ns": 1787468694553440000,
+    "size": 1382212,
+    "url": "https://devaisemanal.com/content/images/2026/08/architecture-7.png"
+  },
+  "assets/evergreen/microsoft-foundry-agent-service-produccion/feature.png": {
+    "mtime_ns": 1787468632697616400,
+    "size": 1600889,
+    "url": "https://devaisemanal.com/content/images/2026/08/feature-7.png"
+  },
+  "assets/evergreen/n8n-agentes-ia-workflows-produccion/architecture.png": {
+    "mtime_ns": 1786381336589723300,
+    "size": 1035928,
+    "url": "https://devaisemanal.com/content/images/2026/08/architecture-2.png"
+  },
+  "assets/evergreen/n8n-agentes-ia-workflows-produccion/feature.png": {
+    "mtime_ns": 1786381291985432600,
+    "size": 1506323,
+    "url": "https://devaisemanal.com/content/images/2026/08/feature-2.png"
+  },
+  "assets/evergreen/oauth-21-mcp-servidores-remotos/architecture.png": {
+    "mtime_ns": 1786086335290195400,
+    "size": 1031920,
+    "url": "https://devaisemanal.com/content/images/2026/08/architecture-1.png"
+  },
+  "assets/evergreen/oauth-21-mcp-servidores-remotos/feature.png": {
+    "mtime_ns": 1786086270525198700,
+    "size": 1394997,
+    "url": "https://devaisemanal.com/content/images/2026/08/feature-1.png"
+  },
+  "assets/evergreen/ollama-produccion-docker-privacidad-costes/architecture.png": {
+    "mtime_ns": 1785913595369992000,
+    "size": 1102227,
+    "url": "https://devaisemanal.com/content/images/2026/08/architecture.png"
+  },
+  "assets/evergreen/ollama-produccion-docker-privacidad-costes/feature.png": {
+    "mtime_ns": 1785913542291063100,
+    "size": 1828281,
+    "url": "https://devaisemanal.com/content/images/2026/08/feature.png"
+  },
+  "assets/evergreen/openai-realtime-api-webrtc-agentes-voz/architecture.png": {
+    "mtime_ns": 1784876878431758400,
+    "size": 1173258,
+    "url": "https://devaisemanal.com/content/images/2026/07/architecture-7.png"
+  },
+  "assets/evergreen/openai-realtime-api-webrtc-agentes-voz/feature.png": {
+    "mtime_ns": 1784876773243779100,
+    "size": 1822918,
+    "url": "https://devaisemanal.com/content/images/2026/07/feature-7.png"
+  },
+  "assets/evergreen/openai-responses-api-function-calling-produccion/architecture.png": {
+    "mtime_ns": 1786863855732097700,
+    "size": 1063871,
+    "url": "https://devaisemanal.com/content/images/2026/08/architecture-4.png"
+  },
+  "assets/evergreen/openai-responses-api-function-calling-produccion/feature.png": {
+    "mtime_ns": 1786863804657955600,
+    "size": 1560194,
+    "url": "https://devaisemanal.com/content/images/2026/08/feature-4.png"
+  },
+  "assets/evergreen/opentelemetry-genai-observabilidad-agentes/architecture.png": {
+    "mtime_ns": 1783494352229210700,
+    "size": 84806,
+    "url": "https://devaisemanal.com/content/images/2026/07/architecture-3.png"
+  },
+  "assets/evergreen/opentelemetry-genai-observabilidad-agentes/feature.png": {
+    "mtime_ns": 1783494352201162200,
+    "size": 45925,
+    "url": "https://devaisemanal.com/content/images/2026/07/feature-3.png"
+  },
+  "assets/evergreen/prompt-injection-agentes-ia-seguridad-evals/architecture.png": {
+    "mtime_ns": 1784272077538167400,
+    "size": 101661,
+    "url": "https://devaisemanal.com/content/images/2026/07/architecture-5.png"
+  },
+  "assets/evergreen/prompt-injection-agentes-ia-seguridad-evals/feature.png": {
+    "mtime_ns": 1784271950723836800,
+    "size": 1538083,
+    "url": "https://devaisemanal.com/content/images/2026/07/feature-5.png"
+  },
+  "assets/evergreen/pydantic-ai-agentes-python-produccion/architecture.png": {
+    "mtime_ns": 1782284728584280300,
+    "size": 80304,
+    "url": "https://devaisemanal.com/content/images/2026/06/architecture-3.png"
+  },
+  "assets/evergreen/pydantic-ai-agentes-python-produccion/feature.png": {
+    "mtime_ns": 1782284728516249600,
+    "size": 50693,
+    "url": "https://devaisemanal.com/content/images/2026/06/feature-4.png"
+  },
+  "assets/evergreen/vercel-ai-sdk-agentes-nextjs-produccion/architecture.png": {
+    "mtime_ns": 1783062599718123900,
+    "size": 60941,
+    "url": "https://devaisemanal.com/content/images/2026/07/architecture-1.png"
+  },
+  "assets/evergreen/vercel-ai-sdk-agentes-nextjs-produccion/feature.png": {
+    "mtime_ns": 1783062551109907100,
+    "size": 41498,
+    "url": "https://devaisemanal.com/content/images/2026/07/feature-1.png"
+  }
+}
