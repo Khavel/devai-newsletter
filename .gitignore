@@ -103,8 +103,40 @@ seo/.reddit-browse-out-*.json
 seo/.reddit-promo-research.json
 seo/.reddit-comment-draft-*.txt
 # Scratch de crosspost/borradores: efimero por diseno, no es fuente.
-_*
-seo/_*
+# OJO: en este repo el prefijo _ tambien nombra HERRAMIENTAS reales y
+# trackeadas (_gsc_seo_report.py, _reddit_detail.py, _ghost_seo_audit.py...),
+# asi que NO se puede ignorar "_*" en bloque: se ignoran las familias de
+# scratch por nombre y los cuerpos de articulo por extension.
+_xpost_*
+_cp_*
+_crosspost_*
+_oai_*
+_bsky_*
+_dmt_*
+_adk_*
+_article_*
+_cf_html*
+_make_*
+_assemble_*
+_build_substack_*
+_fetch_*
+_get_post*
+_ts_check*
+_set_html_clip*
+_post_*.json
+_ghost_cluster_cta_utm.py
+seo/_xpost_*
+seo/_cp_*
+seo/_bsky_*
+seo/_test_*
+seo/_sharpyard_*
+seo/_vigia_*
+seo/_md2html_*
+seo/_html2md*
+seo/_ga_reauth*
+seo/_ga_custom_dims*
+seo/_reddit_pubcheck*
+seo/_reddit_ban_check*
 seo/.tmp_*
 seo/tweet_*.txt
 seo/*_draft.txt
