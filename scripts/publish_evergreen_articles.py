@@ -6949,6 +6949,219 @@ azd ai agent invoke --local "Enumera las tools disponibles y no ejecutes ninguna
             ]),
         ],
     },
+    {
+        "title": "MCP Streamable HTTP: cómo crear servidores remotos sin copiar tutoriales antiguos",
+        "slug": "mcp-streamable-http-servidores-remotos",
+        "status": "published",
+        "published_at": "2026-09-02T07:09:00.000Z",
+        "meta_description": "Guía de MCP Streamable HTTP: endpoint remoto, POST, JSON/SSE, compatibilidad 2025/2026, Origin, OAuth y pruebas para desplegar un servidor seguro.",
+        "excerpt": "Streamable HTTP no significa mantener una sesión SSE eterna. La revisión actual de MCP usa un endpoint POST y una respuesta JSON o SSE por petición. Este es el diseño que evita desplegar un servidor remoto con supuestos ya obsoletos.",
+        "sources": [
+            ("MCP Specification: Streamable HTTP (2026-07-28)", "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http"),
+            ("MCP Specification: transports", "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports"),
+            ("MCP Specification: authorization", "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization"),
+            ("MCP Registry: servidores remotos", "https://modelcontextprotocol.io/registry/remote-servers"),
+            ("MCP TypeScript SDK: servir por HTTP", "https://github.com/modelcontextprotocol/typescript-sdk/blob/main/docs/serving/http.md"),
+            ("MCP TypeScript SDK: compatibilidad 2026-07-28", "https://github.com/modelcontextprotocol/typescript-sdk/blob/main/docs/migration/support-2026-07-28.md"),
+            ("MCP TypeScript SDK: migración a v2", "https://github.com/modelcontextprotocol/typescript-sdk/blob/main/docs/migration/upgrade-to-v2.md"),
+            ("MCP TypeScript SDK: versiones de protocolo", "https://github.com/modelcontextprotocol/typescript-sdk/blob/main/docs/protocol-versions.md"),
+        ],
+        "related": [
+            ("OAuth 2.1 para proteger servidores MCP remotos", "/oauth-21-mcp-servidores-remotos/"),
+            ("MCP Inspector: testing y depuración de servidores", "/mcp-inspector-testing-servidores/"),
+            ("MCP en producción: seguridad, permisos y supply chain", "/mcp-produccion-seguridad-permisos-supply-chain/"),
+            ("MCP Registry: publicar y descubrir servidores", "/mcp-registry-publicar-descubrir-servidores/"),
+            ("MCP outputSchema y structuredContent para agentes", "/mcp-outputschema-structuredcontent-agentes/"),
+        ],
+        "sections": [
+            ("TL;DR", [
+                "La keyword principal es `MCP Streamable HTTP`; la intención es técnica y de implementación: un developer busca exponer un servidor MCP por URL para varios clientes sin confundir el transporte remoto actual con el viejo HTTP+SSE de dos endpoints.",
+                "En la revisión MCP `2026-07-28`, un servidor ofrece un endpoint MCP que acepta `POST`. Cada mensaje JSON-RPC llega en su propia petición; el servidor responde con un JSON o un stream SSE que pertenece a esa petición. Ya no existe un GET stream general ni una sesión de protocolo `Mcp-Session-Id` que debas crear o reanudar.",
+                "Mi postura: mueve un servidor a HTTP solo cuando necesita ser un servicio compartido, gestionado o remoto. Para una tool personal que vive junto al editor, `stdio` conserva una frontera más pequeña. Convertir cada script local en una URL pública añade OAuth, proxy, rate limits y operaciones; no es una mejora automática.",
+            ]),
+            ("Qué resuelve Streamable HTTP", [
+                "`stdio` conecta un host que lanza un proceso local con un servidor que intercambia JSON-RPC por sus streams. Es perfecto cuando el usuario ya tiene el binario, las credenciales permanecen en su máquina y no hay que compartir la tool. Streamable HTTP separa proceso y cliente: el servidor se convierte en un endpoint accesible por red y puede atender a varios llamadores.",
+                "El transporte no convierte una tool en segura ni multi-tenant. Solo define cómo viajan mensajes MCP. Identidad, autorización por recurso, límites de tool, aislamiento de datos, auditoría e idempotencia siguen viviendo en tu gateway y backend. Si una tool puede escribir en Jira, una base de datos o cloud, sigue necesitando política aunque el JSON-RPC viaje por HTTPS.",
+                "El punto práctico es que HTTP permite TLS, un balanceador, observabilidad y una ruta estable como `https://mcp.ejemplo.com/mcp`. El coste es que ahora tus errores de red, CORS, autenticación, buffering de proxies y despliegue pasan a formar parte del contrato que el cliente debe soportar.",
+            ]),
+            ("Imagen", [
+                """<figure style=\"margin:34px 0;font-family:system-ui,sans-serif;\"><img src=\"{{asset:architecture.png}}\" alt=\"Arquitectura de un servidor MCP remoto con cliente, gateway HTTPS que valida origen y token, endpoint único, ejecutor de herramientas y registro de auditoría; un flujo antiguo de dos endpoints aparece descartado\" style=\"width:100%;height:auto;border-radius:12px;border:1px solid #dbe3ef;background:#f8fafc;\" /><figcaption style=\"font-size:14px;color:#64748b;margin-top:10px;line-height:1.5;\">Cada `POST` tiene su propia respuesta JSON o SSE. La autenticación y la política están delante de la ejecución, no escondidas dentro del prompt.</figcaption></figure>""",
+            ]),
+            ("El cambio que rompe tutoriales de 2025", [
+                "La revisión `2025-03-26` sustituyó el transporte HTTP+SSE heredado por Streamable HTTP. La revisión `2026-07-28` volvió a simplificarlo: retiró el GET stream, las sesiones de protocolo, la reanudación `Last-Event-ID` y las peticiones JSON-RPC iniciadas por el servidor. Si un tutorial te dice que abras un stream GET permanente, generes `Mcp-Session-Id` o hagas DELETE para cerrarlo, describe una revisión anterior.",
+                "Eso no implica apagar a todos los clientes viejos de un día para otro. El protocolo define compatibilidad: un servidor que quiera soportarlos puede mantener los endpoints HTTP+SSE heredados junto al endpoint moderno. Pero mantenlo como puente explícito, con métrica de uso y fecha de retirada. Servir tres transportes sin saber quién los usa solo perpetúa superficie de ataque y mantenimiento.",
+                "También cambia el modelo mental de estado. En el protocolo actual no guardes estado de negocio en una supuesta sesión MCP. Si una tool inicia una exportación, guarda el trabajo con un ID propio, asociado al usuario autenticado y con TTL; el siguiente POST puede consultar ese ID. Esa decisión funciona tras un restart y entre réplicas, algo que una sesión en memoria nunca te garantizó.",
+            ]),
+            ("El contrato HTTP que el cliente debe soportar", [
+                "El cliente manda un único request o notification JSON-RPC UTF-8 por `POST` y anuncia ambos formatos: `Accept: application/json, text/event-stream`. Para una request, el servidor puede responder con un objeto JSON o con SSE. El cliente debe manejar los dos, incluso si tu herramienta hoy parece síncrona: un servidor puede emitir progreso y cerrar con la respuesta final en el stream.",
+                "La cancelación moderna es cerrar el stream SSE de esa petición. No envíes `notifications/cancelled` como si fuera stdio. Para cambios de larga vida, el cliente abre `subscriptions/listen`; no reutilices una respuesta de `tools/call` como canal global de notificaciones. En proxies como nginx, desactiva buffering para SSE y usa keep-alives de comentario cuando tengas un stream largo.",
+                "La especificación actual también obliga a espejar metadata en headers: `MCP-Protocol-Version` y `Mcp-Method`; `Mcp-Name` para `tools/call`, `resources/read` y `prompts/get`. El servidor que procesa el body debe rechazar discrepancias. No es decoración: permite que gateway y runtime no tomen decisiones distintas sobre qué tool se va a ejecutar.",
+            ]),
+            ("Código: endpoint remoto moderno en TypeScript", [
+                "La API actual del SDK TypeScript v2 usa una factory por petición. La factory crea un `McpServer` para el llamador actual; los pools y caches viven fuera, pero la identidad y el servidor no se comparten entre requests. Este ejemplo usa un handler web-standard y después lo adapta a Node.",
+                """<div style=\"margin:28px 0;border:1px solid #dbe3ef;border-radius:12px;overflow:hidden;background:#0f172a;\"><div style=\"padding:10px 14px;background:#111827;color:#cbd5e1;font:13px Consolas,monospace;\">src/mcp.ts</div><pre style=\"margin:0;padding:18px;overflow:auto;color:#e5e7eb;font:13px/1.55 Consolas,monospace;\"><code>import { createMcpHandler, McpServer } from "@modelcontextprotocol/server";\nimport { toNodeHandler } from "@modelcontextprotocol/node";\nimport * as z from "zod/v4";\n\nconst handler = createMcpHandler(({ authInfo }) =&gt; {\n  const actorId = authInfo?.clientId;\n  if (!actorId) throw new Error("authenticated caller required");\n\n  const server = new McpServer({ name: "reports", version: "1.0.0" });\n  server.registerTool(\n    "get-report",\n    {\n      description: "Read a report owned by the authenticated caller",\n      inputSchema: z.object({ reportId: z.string().uuid() }),\n    },\n    async ({ reportId }) =&gt; {\n      const report = await reports.findOwnedBy(reportId, actorId);\n      if (!report) return { content: [{ type: "text", text: "Not found" }], isError: true };\n      return { content: [{ type: "text", text: report.summary }] };\n    },\n  );\n  return server;\n});\n\nexport const mcp = toNodeHandler(handler); // app.all("/mcp", mcp)</code></pre></div>""",
+                "La autenticación no se resuelve con ese `throw`; debe ejecutarse antes del handler y poblar `authInfo` solo tras validar token, audiencia y scopes. La herramienta tampoco confía en `reportId` para elegir tenant: deriva la propiedad del actor autenticado. Este es el límite que evita que un modelo convierta una URL remota en una API de lectura arbitraria.",
+            ]),
+            ("Protege el endpoint antes de la primera tool", [
+                "Valida `Origin` en toda conexión entrante; la especificación lo exige para defender servidores locales frente a DNS rebinding. En local, escucha en `127.0.0.1`, no en `0.0.0.0`. El SDK recomienda además validar `Host` delante del handler. CORS no sustituye esa validación: CORS gobierna qué puede leer un navegador; no decide si tu servidor procesa una petición hostil.",
+                "Para un servidor remoto protegido, implementa OAuth 2.1 como resource server. El cliente presenta `Authorization: Bearer`; el token no va en query string y se valida contra la audiencia del recurso MCP concreto. La especificación MCP requiere Protected Resource Metadata cuando soportas autorización y permite que una respuesta `401` o `403` explique scopes mínimos mediante `WWW-Authenticate`.",
+                "Mantén las herramientas con capacidades pequeñas. Separa `read_report` de `delete_report`; aplica límite por actor y tool; valida IDs y rangos en backend; registra un request ID. Un token válido no convierte cualquier argumento en legítimo. Los schemas de MCP evitan formatos absurdos, pero no sustituyen permisos de negocio ni aislamiento multi-tenant.",
+            ]),
+            ("Headers para routing sin inspección profunda", [
+                "Desde la revisión moderna, `Mcp-Method` y `Mcp-Name` exponen en headers el método y, cuando aplica, la tool, resource o prompt. Un gateway puede limitar `tools/call` o enrutar una tool pesada sin parsear todo el JSON. El body sigue siendo la fuente de verdad: runtime e intermediarios deben rechazar un header que no coincida, con `400` y `HeaderMismatch` (`-32020`).",
+                "Una tool puede declarar parámetros primitivos como `x-mcp-header`, por ejemplo una región para routing. Úsalo solo para datos que realmente necesite el borde de red y que puedas validar contra el body. No marques texto de usuario, secretos o JSON complejo: aumenta lo que viaja y registra el proxy. Si el valor no cabe de forma segura en ASCII, el protocolo define el sentinel Base64; no inventes tu propia codificación.",
+                "Una política sana es admitir en el gateway solo protocolo, método, nombre de tool y quizá región no sensible; el servidor vuelve a autorizar todo con la identidad del token. El header acelera una decisión de infraestructura, nunca debe ser la única fuente de permisos.",
+            ]),
+            ("Compatibilidad: elige una política, no una mezcla accidental", [
+                "Si controlas todos los clientes, sirve solo la revisión actual y responde `405` a GET o DELETE en `/mcp`. Es la opción más simple. Si clientes actuales y de 2025 conviven, el SDK v2 `createMcpHandler` puede servir de forma stateless ambas eras mientras terminas la migración; mide `era` por request y deja el fallback documentado.",
+                "Si mantienes una implementación 2025 con sesiones, enrútala de forma explícita delante del handler moderno. No fuerces al handler 2026 a almacenar sesiones porque una integración antigua las espere. Añade una fecha de fin y tests por versión: el fallo típico es probar un Inspector reciente y asumir que el cliente empresarial viejo también entiende los nuevos headers y el flujo de descubrimiento.",
+                "La compatibilidad no debe incluir HTTP+SSE por nostalgia. Úsala solo para usuarios identificados y con una ruta aislada. Un nuevo deployment debería arrancar con un único `/mcp` moderno, documentación que nombra la revisión de protocolo y una matriz de clientes probada en CI.",
+            ]),
+            ("Escala sin convertir SSE en estado", [
+                "Un handler por request y herramientas idempotentes hacen que escalar horizontalmente sea bastante normal: cualquier réplica puede atender el siguiente POST. Para una tarea larga, devuelve un identificador de trabajo y ofrece una tool de consulta o usa las utilidades de tareas de la versión que soportes. No dependas de que la misma conexión TCP, pod o stream permanezca vivo.",
+                "SSE sí exige cuidado operacional. Desactiva buffering del proxy (`X-Accel-Buffering: no` cuando aplique), revisa timeouts de idle y propaga desconexión para cancelar cálculo desperdiciado. Pero no abras SSE por defecto: para una lectura rápida, JSON reduce recursos y hace observabilidad más simple. Escoge streaming cuando hay progreso, pasos intermedios o latencia real que explicar.",
+                "Registra protocolo, method, tool name, actor pseudonimizado, status, latencia, bytes, tipo de respuesta JSON/SSE y motivo de denegación. No metas argumentos completos ni resultados sensibles en las trazas. Es suficiente para detectar una tool lenta o un cliente antiguo sin convertir logs en una fuga de datos.",
+            ]),
+            ("Pruebas que haría antes de publicarlo", [
+                "Prueba `server/discover`, `tools/list` y una `tools/call` con un cliente que negocie `2026-07-28`. Repite con el cliente legacy si prometes fallback. Verifica los dos modos de respuesta: JSON en una tool corta y SSE con progreso o cancelación. MCP Inspector sirve para explorar, pero no sustituye los tests de contrato automatizados.",
+                "Añade negativos: Origin no permitido devuelve `403`; sin token o token de otra audiencia devuelve `401`; scope insuficiente devuelve `403`; `Mcp-Name` distinto del body devuelve `400`; una tool request con ID de otro tenant no revela existencia; cerrar un SSE aborta el trabajo; y un proxy no acumula eventos hasta el final.",
+                "Haz una prueba de upgrade de dependencia. La migración del SDK TypeScript v1 a v2 cambia paquetes y entradas: `StreamableHTTPServerTransport` pasa a una variante Node o Web Standard según runtime y `SSEServerTransport` se elimina. Fija versiones, construye contra el lockfile y no copies imports de un README antiguo a producción.",
+            ]),
+            ("Checklist de despliegue", [
+                "El endpoint `/mcp` está detrás de TLS y no comparte una ruta ambigua con una API pública genérica.",
+                "El runtime valida Origin y Host; el proceso local se liga a loopback cuando no debe ser remoto.",
+                "OAuth valida firma, issuer, expiración, audiencia del recurso y scopes; no acepta tokens por query string.",
+                "Cada tool deriva tenant y actor del contexto autenticado y comprueba permisos en backend.",
+                "Cliente y servidor soportan JSON y SSE por request; existe cancelación y el proxy no bufferiza streams.",
+                "Los headers MCP requeridos coinciden con el body y se rechazan mismatches en borde y servidor.",
+                "La política de compatibilidad enumera versiones, clientes, ruta legacy si existe y fecha de retirada.",
+                "Hay tests de contrato, seguridad, aislamiento de tenants, cancelación y despliegue tras un proxy real.",
+            ]),
+            ("FAQ", [
+                "¿Qué es MCP Streamable HTTP? Es el transporte MCP para un servidor remoto. Cada mensaje JSON-RPC se envía por POST a un endpoint MCP y la respuesta es un JSON o un stream SSE vinculado a esa petición.",
+                "¿Streamable HTTP sustituye a stdio? No. `stdio` sigue siendo apropiado para servidores locales lanzados por el host. Streamable HTTP resuelve un servidor compartido o remoto; requiere controles de red, autenticación y operaciones adicionales.",
+                "¿Necesito Mcp-Session-Id en 2026? No para la revisión `2026-07-28`. El GET stream y las sesiones de protocolo se retiraron. Modela el estado de negocio con tus propios IDs persistentes y asociados a la identidad autenticada.",
+                "¿Por qué el servidor debe aceptar JSON y SSE? El cliente anuncia ambos formatos y el servidor elige por petición. JSON funciona para resultados breves; SSE permite notificaciones de progreso y una respuesta final de un trabajo que necesita streaming.",
+                "¿CORS protege un MCP remoto? No. Necesitas validar Origin, autenticar cada request, autorizar la tool y sus argumentos en backend, aplicar TLS y comprobar aislamiento de tenant. CORS es solo una política del navegador.",
+                "¿Puedo mantener el transporte SSE antiguo? Solo como compatibilidad explícita para clientes que realmente lo requieran. Es un transporte deprecado; las implementaciones nuevas deben preferir Streamable HTTP y fijar una retirada medible del puente legacy.",
+            ]),
+            ("HowTo", [
+                "Cómo migrar un servidor MCP local a Streamable HTTP moderno",
+                "Decidir si debe ser remoto: Mantén stdio si la tool es personal; usa HTTP cuando haya clientes compartidos, operación gestionada o acceso por red justificado.",
+                "Fijar la revisión: Declara clientes y versiones soportadas; evita mezclar GET streams, sesiones heredadas y el endpoint actual por accidente.",
+                "Crear el endpoint: Expón un único `/mcp` que procese POST y pueda devolver JSON o SSE por request mediante el SDK actual.",
+                "Montar controles de borde: Valida Origin y Host, termina TLS, limita tamaño y rate, y enlaza loopback para desarrollo local.",
+                "Autenticar y autorizar: Valida bearer token, audiencia y scopes antes del handler; deriva actor y tenant de esa identidad en cada tool.",
+                "Validar el contrato: Comprueba `MCP-Protocol-Version`, `Mcp-Method` y `Mcp-Name` frente al body y rechaza mismatches.",
+                "Modelar trabajo durable: Guarda tareas largas y estado de negocio con IDs propios, TTL y control de propietario; no uses una conexión como base de datos.",
+                "Probar clientes reales: Cubre discover, tools/list, JSON, SSE, cancelación, proxy, scopes, tenant cruzado y el fallback legacy que prometas.",
+                "Publicar con observabilidad: Mide era de protocolo, tool, resultado, latencia y denegaciones; elimina rutas heredadas cuando su uso llegue a cero.",
+            ]),
+        ],
+    },
+    {
+        "title": "RAG multi-tenant seguro: cómo filtrar permisos antes de recuperar contexto",
+        "slug": "rag-multitenant-filtros-permisos",
+        "status": "published",
+        "published_at": "2026-09-04T07:15:00.000Z",
+        "meta_description": "Guía práctica de RAG multi-tenant: identidad verificada, ACL, metadata filters, RLS y pruebas para impedir que un chat recupere contexto de otro usuario.",
+        "excerpt": "Un filtro de metadata no es seguridad si lo compone el navegador o se aplica después del vector search. En un RAG multi-tenant, la identidad autenticada debe decidir qué chunks existen para cada consulta antes de que el modelo los vea.",
+        "sources": [
+            ("Azure Architecture Center: RAG multitenant seguro", "https://learn.microsoft.com/en-us/azure/architecture/ai-ml/guide/secure-multitenant-rag"),
+            ("Azure AI Search: ACL y RBAC en query-time", "https://learn.microsoft.com/en-us/azure/search/search-query-access-control-rbac-enforcement"),
+            ("Amazon Bedrock: filtros de retrieval", "https://docs.aws.amazon.com/bedrock/latest/APIReference/API_RetrievalFilter.html"),
+            ("Amazon Bedrock: retrieval con ACL", "https://docs.aws.amazon.com/bedrock/latest/userguide/kb-test-retrieve-acl.html"),
+            ("AWS: arquitectura RAG con datos sensibles", "https://docs.aws.amazon.com/solutions/securing-sensitive-data-in-rag-applications-using-amazon-bedrock/"),
+            ("PostgreSQL: Row Security Policies", "https://www.postgresql.org/docs/current/ddl-rowsecurity.html"),
+            ("pgvector: búsqueda vectorial en Postgres", "https://github.com/pgvector/pgvector"),
+            ("OWASP: LLM Prompt Injection Prevention", "https://genai.owasp.org/llmrisk/llm01-prompt-injection/"),
+        ],
+        "related": [
+            ("Búsqueda híbrida RAG: BM25, vectores y reranking", "/busqueda-hibrida-rag-bm25-vectorial-reranking/"),
+            ("Evaluación RAG en producción: métricas y datasets", "/evaluacion-rag-produccion-metricas-datasets/"),
+            ("Memoria de agentes de IA: privacidad y borrado", "/memoria-agentes-ia-produccion-privacidad/"),
+            ("Prompt injection en agentes de IA: defensas y evals", "/prompt-injection-agentes-ia-seguridad-evals/"),
+            ("OpenTelemetry GenAI: observar agentes sin filtrar datos", "/opentelemetry-genai-observabilidad-agentes/"),
+        ],
+        "sections": [
+            ("TL;DR", [
+                "La keyword principal es `RAG multi-tenant`; la intención es implementar un chat de conocimiento que no entregue a un usuario chunks, citas o respuestas basadas en documentos de otro tenant, equipo o nivel de acceso.",
+                "RAG seguro significa que el retriever recibe una identidad ya autenticada, deriva una política en servidor y aplica esa política como pre-filtro de recuperación. El LLM solo ve chunks que pasaron esa frontera. No basta con decirle al modelo que no revele información ni con borrar una cita después de generar.",
+                "Mi postura: un índice vectorial compartido es aceptable cuando el control de acceso es verificable en la consulta y en la ingesta. Si no puedes expresar, sincronizar y probar la ACL por chunk, separa el índice o no lances el caso de uso. Una respuesta bonita obtenida con un documento ajeno sigue siendo una fuga.",
+            ]),
+            ("El error de diseño: confundir relevancia con autorización", [
+                "Una búsqueda vectorial ordena por similitud; BM25 ordena por coincidencia léxica; un reranker ordena por relevancia. Ninguno sabe que el usuario actual no puede leer un contrato, un incidente o un roadmap. La autorización debe reducir el conjunto elegible antes de cualquiera de esas etapas.",
+                "Azure llama a esa reducción security trimming. Bedrock documenta sus ACL como filtrado consciente de permisos, no como autenticación: tu aplicación sigue siendo responsable de verificar al usuario y pasar su contexto fiable. Esa distinción importa porque un `tenant_id` enviado por el cliente es una preferencia no autenticada, no una identidad.",
+                "El orden correcto es identidad verificada → política → filtro de retrieval → ranking → contexto → modelo. Si recuperas top-50 global, filtras top-5 al final y solo entonces construyes el prompt, ya has expuesto datos a una capa que puede registrar trazas, caché, métricas o errores.",
+            ]),
+            ("Imagen", [
+                '<figure style="margin:34px 0;font-family:system-ui,sans-serif;"><img src="{{asset:architecture.png}}" alt="Flujo de RAG multi-tenant: identidad autenticada, política, filtro previo al índice vectorial, contexto permitido, respuesta con citas y auditoría; un documento no autorizado queda denegado" style="width:100%;height:auto;border-radius:12px;border:1px solid #dbe3ef;background:#f8fafc;" /><figcaption style="font-size:14px;color:#64748b;margin-top:10px;line-height:1.5;">La frontera de permisos está antes del índice. El modelo no decide qué documento puede leer una persona.</figcaption></figure>',
+            ]),
+            ("Diseña la ACL al tamaño del chunk", [
+                "El documento es una unidad cómoda para ingestar, pero no siempre para autorizar. Si un PDF mezcla una política pública con un anexo de recursos humanos, partirlo en chunks y dar a todos la ACL del PDF completo sobreexpone. Segmenta allí donde cambian propietario, tenant, proyecto o clasificación.",
+                "Un contrato mínimo por chunk suele incluir `tenant_id`, `document_id`, `source_version`, `classification`, `allowed_principals` o `allowed_groups`, `valid_from`, `valid_until` y un estado de revocación. No metas el texto de la ACL solo en el embedding: debe estar en campos filtrables y gobernados por el índice o base de datos.",
+                "Evita modelar permisos como una lista de correos copiada de una hoja de cálculo. Conserva el identificador estable del principal o grupo procedente de tu proveedor de identidad, la versión de permisos y la fecha de sincronización. Sin procedencia no puedes explicar por qué un chunk apareció ni detectar una ACL vieja.",
+            ]),
+            ("Deriva el filtro en backend", [
+                "El frontend puede enviar la pregunta, no el ámbito. Tras validar sesión o token, el backend obtiene tenant, grupos, rol y atributos de sensibilidad de una fuente controlada. Luego crea un filtro cerrado: tenant exacto AND clasificación permitida AND grupo incluido AND documento no revocado.",
+                "No aceptes un JSON arbitrario tipo `filters` del navegador y lo combines con un `AND tenant_id = ...` optimista. El atacante puede pedir otro tenant, añadir un OR, provocar un fallback sin filtro o explotar una ruta de búsqueda distinta que olvidaste proteger. El contrato del retriever debería recibir un objeto de identidad, no un filtro libre.",
+                "La misma política debe proteger sugerencias, búsqueda por título, previsualizaciones, descargas, caches semánticas, herramientas de agente y links de cita. Proteger solo `retrieve()` deja una API lateral con la que inferir nombres o contenido de documentos restringidos.",
+            ]),
+            ("Ejemplo con Postgres, pgvector y RLS", [
+                "Postgres permite que la base aplique Row Level Security aunque alguien añada una ruta de aplicación defectuosa. Usa una cuenta de aplicación que no sea owner de la tabla, activa RLS y fuerza RLS para que el owner tampoco la eluda accidentalmente. La variable de sesión se fija dentro de una transacción, desde claims que el servidor validó.",
+                '<div style="margin:28px 0;border:1px solid #dbe3ef;border-radius:12px;overflow:hidden;background:#0f172a;"><div style="padding:10px 14px;background:#111827;color:#cbd5e1;font:13px Consolas,monospace;">schema.sql</div><pre style="margin:0;padding:18px;overflow:auto;color:#e5e7eb;font:13px/1.55 Consolas,monospace;"><code>CREATE TABLE rag_chunks (id uuid PRIMARY KEY, tenant_id uuid NOT NULL, classification text NOT NULL, content text NOT NULL, embedding vector(1536), revoked_at timestamptz); ALTER TABLE rag_chunks ENABLE ROW LEVEL SECURITY; ALTER TABLE rag_chunks FORCE ROW LEVEL SECURITY; CREATE POLICY tenant_can_read_chunks ON rag_chunks FOR SELECT USING (tenant_id = current_setting(&#39;app.tenant_id&#39;, true)::uuid AND revoked_at IS NULL); SELECT set_config(&#39;app.tenant_id&#39;, :verified_tenant_id, true); SELECT id, content FROM rag_chunks WHERE classification = ANY(:allowed_classifications) ORDER BY embedding &lt;=&gt; :query_embedding LIMIT 12;</code></pre></div>',
+                "Esto no reemplaza una política de grupos más rica, pero ilustra la propiedad importante: el `tenant_id` no sale de la pregunta ni del navegador, y el filtro se ejecuta en la misma consulta que calcula vecinos. Comprueba además que el pool limpia configuración de sesión al devolver la conexión; una identidad heredada es otra fuga entre requests.",
+            ]),
+            ("Índice compartido, colección por tenant o aislamiento físico", [
+                "Un índice compartido con filtros es eficiente cuando los tenants son numerosos, el motor ejecuta el filtro antes de devolver candidatos y puedes medir el coste de ACL de alta cardinalidad. Es la opción normal para SaaS, pero requiere una disciplina fuerte de ingesta, filtros obligatorios y tests negativos.",
+                "Una colección o namespace por tenant reduce el radio de blast y simplifica algunas consultas, a costa de operaciones, shards pequeños y migraciones. Úsalo cuando cada tenant tenga volumen suficiente o un modelo de retención distinto. Para clientes regulados o muy sensibles, una cuenta, índice o clave de cifrado dedicada puede ser una decisión de producto válida.",
+                "No elijas según la facilidad de la demo. Elige según dónde puedes demostrar aislamiento: permisos por chunk, backup y restauración, borrado, logs, caché, soporte operativo y capacidad de revocar acceso sin re-embeddar todo el corpus.",
+            ]),
+            ("ACL frescas: la ingesta también es una frontera", [
+                "El retrieval solo es tan correcto como sus metadatos. Al ingestar, valida origen, tenant y clasificación; registra el documento fuente, versión de ACL y timestamp. Cuando SharePoint, Drive o tu DMS cambie permisos, procesa el delta antes de prometer que el chat refleja el cambio.",
+                "Define qué ocurre durante el retraso de sincronización. Para revocaciones sensibles, marca primero la fuente o el documento como no recuperable en una capa de política de baja latencia y elimina o reindexa los chunks después. Esperar al próximo batch nocturno es una decisión de riesgo, no un detalle de ETL.",
+                "Borrar un fichero fuente tampoco basta si el chunk vive en una cola, una caché de embeddings, una exportación de evaluación o trazas con contexto. El mapa de retención debe enumerar esas copias y quién ejecuta su limpieza verificable.",
+            ]),
+            ("No dejes que la seguridad destruya la recuperación", [
+                "Un filtro correcto puede dejar pocos candidatos y hacer que el top-k sea pobre. Mide por identidad y política cuántos documentos pasan el pre-filtro, recall@k sobre el corpus autorizado, consultas sin contexto, latencia y coste. No midas solo calidad promedio global: oculta que un grupo pequeño recibe cero resultados útiles.",
+                "Cuando falte contexto autorizado, responde que no hay información accesible o solicita permiso; no relajes el filtro, no reintentes contra el índice global y no pidas al modelo que complete con memoria. Un sistema que devuelve una negativa honesta conserva la frontera; uno que hace fallback silencioso la destruye.",
+                "Reranking ocurre después del filtro. Si necesitas diversidad por documento o un mínimo de citas, aplícalo dentro del conjunto permitido. La mejora de relevancia nunca puede reintroducir un candidato que la política excluyó.",
+            ]),
+            ("Pruebas de aislamiento que deben bloquear un despliegue", [
+                "Crea dos tenants con documentos deliberadamente similares y una tercera identidad sin acceso. Comprueba que cada consulta, variante lingüística y prompt injection solo devuelve citas del tenant correcto. Incluye documentos de ACL vacía, grupos revocados, clasificación caducada y errores del proveedor de identidad; el comportamiento seguro es denegar o devolver cero contexto.",
+                "Prueba todas las superficies: retrieval directo, API de chat, streaming, historial, cache, búsqueda de archivos, enlaces citados, herramientas MCP y tareas en background. Haz también una prueba de conexión reutilizada para confirmar que no conserva `app.tenant_id` ni un cache key de otro usuario.",
+                "Registra request ID, política/version de ACL, número de candidatos antes y después del filtro, ids de chunks permitidos hasheados y decisión final. No guardes el prompt y los chunks íntegros por defecto: una traza de seguridad que se convierte en repositorio de datos sensibles no es observabilidad responsable.",
+            ]),
+            ("Checklist antes de abrir el chat a usuarios", [
+                "La identidad viene de un token o sesión validada en backend; el cliente no elige tenant, grupos ni nivel de acceso.",
+                "Cada chunk tiene tenant, procedencia, ACL o clasificación filtrable, versión y estado de revocación.",
+                "El filtro se aplica antes de vector search, keyword search, reranking, caché y generación; no existe fallback global.",
+                "Las ACL se actualizan con un SLA explícito y una revocación urgente puede bloquear recuperación antes de reindexar.",
+                "Hay RLS, filtros nativos o ambos como defensa en profundidad; las credenciales del runtime no pueden saltarlos.",
+                "Evals y tests negativos comprueban aislamiento entre tenants, revocación, consultas laterales y conexiones reutilizadas.",
+                "Logs, exports, caches y datasets de evaluación tienen una política de retención y borrado compatible con el contenido recuperado.",
+            ]),
+            ("FAQ", [
+                "¿Un metadata filter hace seguro mi RAG? Solo si la aplicación construye el filtro desde identidad verificada, el motor lo aplica antes de recuperar candidatos y todas las rutas usan la misma política. Un filtro enviado por el cliente no es un control de acceso.",
+                "¿Debo usar un índice por tenant? No siempre. Un índice compartido con pre-filtros y pruebas de aislamiento puede escalar bien. Separa colecciones o infraestructura cuando el aislamiento, la retención, el volumen o el riesgo lo justifiquen y puedas operarlo mejor.",
+                "¿Puedo filtrar después de buscar los vectores? No para seguridad. Filtrar después puede exponer candidatos a caches, logs o un modelo, y además puede inducir fallbacks inseguros. Filtra antes de ranking y contexto.",
+                "¿RLS sustituye las ACL del índice vectorial? RLS es una defensa excelente cuando retrieval pasa por tu base, pero no protege automáticamente un vector DB o servicio gestionado externo. Usa la frontera que realmente ejecuta la consulta y añade defensas independientes cuando puedas.",
+                "¿Qué pasa si no hay documentos autorizados? Devuelve una negativa clara o pide permisos. Nunca amplíes la búsqueda global ni inventes contexto para hacer la respuesta más útil.",
+                "¿Prompt injection puede saltarse la ACL? No debería, porque la ACL se decide antes de entregar contexto al modelo. Aun así, trata el contenido recuperado como no confiable y protege las herramientas que el agente pueda llamar después.",
+            ]),
+            ("HowTo", [
+                "Cómo implementar un primer RAG multi-tenant seguro",
+                "Modelar acceso: Define tenant, usuarios, grupos, clasificación, procedencia y qué significa una revocación antes de elegir el vector store.",
+                "Etiquetar en ingesta: Asigna metadata de tenant y ACL a cada chunk en una fuente controlada, registra versión y rechaza documentos sin propietario conocido.",
+                "Autenticar en backend: Valida token o sesión y deriva claims en servidor; nunca aceptes el tenant o filtro de permisos desde el navegador.",
+                "Construir el pre-filtro: Genera una política cerrada de tenant, grupos, clasificación y revocación que el retriever aplique antes de vector o keyword search.",
+                "Añadir defensa de datos: Activa RLS o el control nativo del índice y usa una credencial de runtime que no pueda saltarse la política.",
+                "Controlar frescura: Sincroniza cambios de permisos, define un SLA y bloquea recuperación de una revocación urgente mientras reindexas.",
+                "Evaluar aislamiento: Crea corpus gemelos entre tenants y casos negativos para cada API, caché, herramienta y conexión reutilizada.",
+                "Observar sin filtrar: Registra decisiones y contadores redactados, alerta por filtros ausentes y conserva evidencia suficiente para investigar sin copiar el contexto sensible.",
+            ]),
+        ],
+    },
 ]
 
 
@@ -7238,6 +7451,8 @@ PATTERN_BY_SLUG = {
     "git-worktree-agentes-ia-paralelo": "operating_manual",
     "codex-skills-workflows-reutilizables": "operating_manual",
     "memoria-agentes-ia-produccion-privacidad": "architecture_deep_dive",
+    "mcp-streamable-http-servidores-remotos": "architecture_deep_dive",
+    "rag-multitenant-filtros-permisos": "architecture_deep_dive",
 }
 
 
@@ -7306,6 +7521,8 @@ SEO_META_TITLES = {
     "git-worktree-agentes-ia-paralelo": "Git worktree para agentes de IA: guía práctica",
     "codex-skills-workflows-reutilizables": "Codex Skills: guía para workflows reutilizables",
     "memoria-agentes-ia-produccion-privacidad": "Memoria de agentes de IA: guía de producción",
+    "mcp-streamable-http-servidores-remotos": "MCP Streamable HTTP: guía de servidores remotos",
+    "rag-multitenant-filtros-permisos": "RAG multi-tenant seguro: filtros y permisos",
 }
 
 
@@ -7374,6 +7591,8 @@ ARTICLE_FEATURE_IMAGES = {
     "git-worktree-agentes-ia-paralelo": "assets/evergreen/git-worktree-agentes-ia-paralelo/feature.png",
     "codex-skills-workflows-reutilizables": "assets/evergreen/codex-skills-workflows-reutilizables/feature.png",
     "memoria-agentes-ia-produccion-privacidad": "assets/evergreen/memoria-agentes-ia-produccion-privacidad/feature.png",
+    "mcp-streamable-http-servidores-remotos": "assets/evergreen/mcp-streamable-http-servidores-remotos/feature.png",
+    "rag-multitenant-filtros-permisos": "assets/evergreen/rag-multitenant-filtros-permisos/feature.png",
 }
 
 

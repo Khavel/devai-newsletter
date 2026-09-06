@@ -159,6 +159,16 @@
     "size": 2038140,
     "url": "https://devaisemanal.com/content/images/2026/08/feature-3.png"
   },
+  "assets/evergreen/mcp-streamable-http-servidores-remotos/architecture.png": {
+    "mtime_ns": 1788332661917379800,
+    "size": 998413,
+    "url": "https://devaisemanal.com/content/images/2026/09/architecture.png"
+  },
+  "assets/evergreen/mcp-streamable-http-servidores-remotos/feature.png": {
+    "mtime_ns": 1788332598743555800,
+    "size": 1470964,
+    "url": "https://devaisemanal.com/content/images/2026/09/feature.png"
+  },
   "assets/evergreen/memoria-agentes-ia-produccion-privacidad/architecture.png": {
     "mtime_ns": 1788073513435236600,
     "size": 986632,
@@ -258,6 +268,16 @@
     "mtime_ns": 1782284728516249600,
     "size": 50693,
     "url": "https://devaisemanal.com/content/images/2026/06/feature-4.png"
+  },
+  "assets/evergreen/rag-multitenant-filtros-permisos/architecture.png": {
+    "mtime_ns": 1788505498431034600,
+    "size": 1079767,
+    "url": "https://devaisemanal.com/content/images/2026/09/architecture-1.png"
+  },
+  "assets/evergreen/rag-multitenant-filtros-permisos/feature.png": {
+    "mtime_ns": 1788505442769929300,
+    "size": 1678465,
+    "url": "https://devaisemanal.com/content/images/2026/09/feature-1.png"
   },
   "assets/evergreen/vercel-ai-sdk-agentes-nextjs-produccion/architecture.png": {
     "mtime_ns": 1783062599718123900,
