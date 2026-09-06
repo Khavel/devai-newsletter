@@ -277,9 +277,19 @@ def build_lexical(nodes: list[dict]) -> str:
     )
 
 
+OWN_DOMAINS = ("futpicks.com", "nbaproplab.com", "devaisemanal.com")
+
+
+def _source_rel(url: str) -> str:
+    """Third-party sources stay nofollow; links to our own properties pass authority (SEO plan 2026-09-05)."""
+    host = url.split("//", 1)[-1].split("/", 1)[0].lower()
+    own = any(host == d or host.endswith("." + d) for d in OWN_DOMAINS)
+    return "noopener" if own else "nofollow noopener"
+
+
 def sources_card(sources: list[tuple[str, str]]) -> dict:
     links = "".join(
-        f'<li><a href="{url}" rel="nofollow noopener" target="_blank">{label}</a></li>'
+        f'<li><a href="{url}" rel="{_source_rel(url)}" target="_blank">{label}</a></li>'
         for label, url in sources
     )
     return html_card(
@@ -1079,6 +1089,7 @@ ARTICLES = [
         "excerpt": "Predecir fútbol no va de acertar marcadores exactos. Va de estimar distribuciones de goles, calibrar probabilidades y compararlas con precios reales de mercado.",
         "sources": [
             ("FutPicks: football picks and predictions", "https://futpicks.com/"),
+            ("FutPicks: alineaciones probables con probabilidad de titular", "https://futpicks.com/onces/la-liga"),
             ("StatsBomb: expected goals explained", "https://statsbomb.com/soccer-metrics/expected-goals-xg-explained/"),
             ("Machine learning for sports betting: accuracy or calibration?", "https://www.sciencedirect.com/science/article/pii/S266682702400015X"),
             ("American Gaming Association: Responsible Marketing Code", "https://www.americangaming.org/marketing-code/"),
@@ -7883,6 +7894,12 @@ def upsert_article(client: httpx.Client, admin_api_key: str, spec: dict) -> str:
     payload = build_article(prepared)
     if post:
         payload["updated_at"] = post["updated_at"]
+        # A spec that says "scheduled" describes the FIRST publication. Once that time passes
+        # Ghost flips the post to "published" and rejects an update that sends it back to
+        # "scheduled" with 422 "Your post is already published, please reload your page".
+        # On an update the live status always wins.
+        if post.get("status"):
+            payload["status"] = post["status"]
         resp = client.put(
             f"{GHOST_URL}/ghost/api/admin/posts/{post['id']}/",
             headers=headers(admin_api_key),
