@@ -120,5 +120,5 @@ Task files live in `C:\Users\ceja_\.claude\scheduled-tasks\<task-id>\SKILL.md`.
 
 - 2026-09-16: script `_ghost_seo_actions_2026_09_16.py` preparado (retítulos de
   tabnine/bolt/playwright-mcp/v0/mcp-inspector, página `/formacion/`, CTA
-  `cta-formacion` en 6 guías); dry-run limpio; `--apply` pendiente de confirmación del
-  owner. Backups en `output/backups/`.
+  `cta-formacion` en 5 guías, 1 pendiente); dry-run limpio; `--apply` pendiente de
+  confirmación del owner. Backups en `output/backups/`.

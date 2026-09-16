@@ -74,6 +74,14 @@ CTA_FORMACION = (
 
 CTA_TARGET_SLUGS = [
     "claude-code-dotnet-csharp-guia",
+    # "tutoriales-claude-code-aceptar-automaticamente" se SALTA en inject_formacion_cta
+    # (ruling del controlador, 2026-09-16): este post no tiene cuerpo lexical, y el unico
+    # camino que insert_html_node encuentra para editarlo sin lexical es el fallback
+    # ?source=html, que (a) se salta el guard anti-encogimiento, (b) deja un backup con
+    # lexical null (no guarda el cuerpo real) y (c) viola la regla del repo de que
+    # ?source=html solo vale para CREAR la pagina /formacion/, nunca para editar un cuerpo
+    # existente. Se deja en la lista para que quede constancia de que sigue pendiente
+    # (migrar el post a lexical), pero inject_formacion_cta lo salta explicitamente.
     "tutoriales-claude-code-aceptar-automaticamente",
     "agents-md-claude-md-memoria-proyecto",
     "claude-code-que-es-guia-completa",
@@ -129,6 +137,9 @@ def ensure_formacion_page():
     if r.status_code == 200:
         print(f"  SKIP página /{FORMACION_PAGE['slug']}/ ya existe: {r.json()['pages'][0]['url']}")
         return
+    if r.status_code != 404:
+        print(f"  ERROR pagina /{FORMACION_PAGE['slug']}/: GET {r.status_code} {r.text[:200]}")
+        return
     body = {"pages": [{
         "title": FORMACION_PAGE["title"],
         "slug": FORMACION_PAGE["slug"],
@@ -151,6 +162,9 @@ def retitle_all():
                       headers=hdr(), timeout=30)
         if r.status_code == 404:
             print(f"\n=== {slug} === NO EXISTE: confirma el slug con _list_ghost_posts.py")
+            continue
+        if r.status_code != 200:
+            print(f"\n=== {slug} === ERROR: GET {r.status_code} {r.text[:200]}")
             continue
         po = r.json()["posts"][0]
         (BACKUP_DIR / f"{slug}-{time.strftime('%Y%m%d')}.json").write_text(json.dumps(po, ensure_ascii=False, indent=1), encoding="utf-8")
@@ -190,8 +204,15 @@ def inject_formacion_cta():
                 print(f"\n=== {slug} === NO EXISTE: confirma el slug con _list_ghost_posts.py")
                 continue
             raise
-        (BACKUP_DIR / f"{slug}-{time.strftime('%Y%m%d')}.json").write_text(json.dumps(po, ensure_ascii=False, indent=1), encoding="utf-8")
         print(f"\n=== {slug} ===")
+        if not po.get("lexical"):
+            print(f"  SKIP {slug}: sin cuerpo lexical (el fallback ?source=html esta "
+                  f"prohibido para editar; pendiente de migrar el post a lexical)")
+            continue
+        # El backup solo se escribe aqui, DESPUES de confirmar que el post tiene lexical y
+        # por tanto va a ser editado de verdad -- nunca para un post que se salta (ruling
+        # del controlador, 2026-09-16): dumping solo lo que realmente se va a PUT.
+        (BACKUP_DIR / f"{slug}-{time.strftime('%Y%m%d')}.json").write_text(json.dumps(po, ensure_ascii=False, indent=1), encoding="utf-8")
         old_len = len(po.get("lexical") or "")
         surgery.put_post = _guarded_put_post(slug, old_len)
         try:
