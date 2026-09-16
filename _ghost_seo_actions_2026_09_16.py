@@ -11,13 +11,15 @@ sys.stdout.reconfigure(encoding="utf-8")
 from dotenv import load_dotenv
 from pathlib import Path
 load_dotenv(Path(__file__).parent / ".env", override=True)
-import httpx
 
 admin_api_key = os.getenv("GHOST_ADMIN_API_KEY", "").strip()
 GHOST = "https://devaisemanal.com"
-key_id, secret = admin_api_key.split(":", 1)
+
+def _key_parts():
+    return admin_api_key.split(":", 1)
 
 def token():
+    key_id, secret = _key_parts()
     now = int(time.time())
     def b(d): return base64.urlsafe_b64encode(d).decode().rstrip("=")
     h = b(json.dumps({"alg":"HS256","typ":"JWT","kid":key_id},separators=(",",":")).encode())
