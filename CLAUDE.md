@@ -115,3 +115,10 @@ Task files live in `C:\Users\ceja_\.claude\scheduled-tasks\<task-id>\SKILL.md`.
 - **Claude model** — `claude-sonnet-4-6` for pipeline (corrected 2026-08-02: the old pin `claude-sonnet-4-20250514` was retired by Anthropic and its 404 broke the pipeline in 2026-06). **`config.yaml` is the source of truth for the model id** — always read it there; do not trust this line if they ever diverge.
 - **Anti-detection** — Never cross-reference the 3 Twitter accounts. No RT/like between them.
 - **Phone number** — All 3 Twitter accounts share phone 696295730. Risk of linked suspension.
+
+## Historial de acciones SEO
+
+- 2026-09-16: script `_ghost_seo_actions_2026_09_16.py` preparado (retítulos de
+  tabnine/bolt/playwright-mcp/v0/mcp-inspector, página `/formacion/`, CTA
+  `cta-formacion` en 6 guías); dry-run limpio; `--apply` pendiente de confirmación del
+  owner. Backups en `output/backups/`.

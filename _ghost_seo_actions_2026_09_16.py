@@ -6,11 +6,12 @@ sustituye la llamada a suscribirse por una llamada a la linea de formacion en la
 guias de Claude Code / .NET. Este modulo solo define datos: la logica que llama a
 Ghost llega en un paso posterior (no ejecutar nada de aqui todavia).
 """
-import sys, json, os, time, hashlib, hmac, base64
+import sys, json, os, time, hashlib, hmac, base64, importlib.util
 sys.stdout.reconfigure(encoding="utf-8")
 from dotenv import load_dotenv
 from pathlib import Path
 load_dotenv(Path(__file__).parent / ".env", override=True)
+import httpx
 
 admin_api_key = os.getenv("GHOST_ADMIN_API_KEY", "").strip()
 GHOST = "https://devaisemanal.com"
@@ -35,7 +36,10 @@ def hdr():
 # (ver task-1-report.md): tabnine y playwright-mcp y mcp-inspector se corrigieron porque el
 # slug que Mangools asocia a la URL no coincidia con el slug real en Ghost.
 RETITLES = [
-    ("tabnine-autocompletado-codigo-ia",  # corregido: el brief traia "tabnine-que-es-precios-alternativas" (no existe)
+    ("tabnine-autocompletado-codigo-ia",  # corregido: el brief traia "tabnine-que-es-precios-alternativas" (no existe).
+     # CONFIRMADO por el controlador con datos de Search Console (2026-09-16, ultimos 90 dias):
+     # 220 impresiones y posicion media 9.4 para la query "tabnine", frente a 3 y 13
+     # impresiones de los otros dos posts de Tabnine -- ya no es una inferencia de Task 1.
      "Tabnine: qué es, precios y alternativas (2026)",
      "Tabnine a fondo: autocompletado con IA que corre en local, qué modelos usa, cuánto cuesta por usuario y cuándo compensa frente a Copilot o Cursor en 2026."),
     ("bolt-new-crear-apps-ia-navegador",  # confirmado
@@ -73,7 +77,12 @@ CTA_TARGET_SLUGS = [
     "tutoriales-claude-code-aceptar-automaticamente",
     "agents-md-claude-md-memoria-proyecto",
     "claude-code-que-es-guia-completa",
-    "guias-claude-code",
+    # "guias-claude-code" quitado (dry-run 2026-09-16): NO EXISTE como POST -- es una
+    # Ghost PAGE (/guias-claude-code/, "Claude Code: Guía Definitiva para Desarrolladores"),
+    # confirmado via GET /ghost/api/admin/pages/slug/guias-claude-code/. insert_html_node
+    # de _ghost_cta_surgery.py solo edita posts (API /admin/posts/), no pages; añadir esa
+    # ruta esta fuera del alcance de esta tarea (Task 2 solo toca este fichero). No se aplica
+    # a un slug adivinado.
     "claude-code-terminal-ia-guia",
     "codex-cli-configuracion-agents-md-permisos",
 ]
@@ -103,3 +112,102 @@ FORMACION_PAGE = {
         "contándome qué hace tu equipo y qué te gustaría que hiciera con IA. Respondo en menos de dos días.</p>"
     ),
 }
+
+# Importar _ghost_cta_surgery.py por ruta (como hacen los tests) para reutilizar
+# insert_html_node/get_post sin reejecutar la cabecera de token() a nivel de módulo.
+_surgery_spec = importlib.util.spec_from_file_location(
+    "_ghost_cta_surgery", Path(__file__).parent / "_ghost_cta_surgery.py")
+surgery = importlib.util.module_from_spec(_surgery_spec)
+_surgery_spec.loader.exec_module(surgery)
+
+BACKUP_DIR = Path(__file__).parent / "output" / "backups"
+
+
+def ensure_formacion_page():
+    """Crea la página /formacion/ si no existe; si existe, no la toca (idempotente)."""
+    r = httpx.get(f"{GHOST}/ghost/api/admin/pages/slug/{FORMACION_PAGE['slug']}/?fields=id,url", headers=hdr(), timeout=30)
+    if r.status_code == 200:
+        print(f"  SKIP página /{FORMACION_PAGE['slug']}/ ya existe: {r.json()['pages'][0]['url']}")
+        return
+    body = {"pages": [{
+        "title": FORMACION_PAGE["title"],
+        "slug": FORMACION_PAGE["slug"],
+        "status": "published",
+        "html": FORMACION_PAGE["html"],
+        "meta_title": "Formación en IA para equipos .NET | DevAI Semanal",
+        "meta_description": "Talleres de un día de IA aplicada para equipos .NET y sesiones 1:1 para desarrolladores, impartidos por el autor de DevAI Semanal. Bonificable por FUNDAE.",
+    }]}
+    if DRY:
+        print(f"  [DRY RUN] crearía la página /{FORMACION_PAGE['slug']}/")
+        return
+    u = httpx.post(f"{GHOST}/ghost/api/admin/pages/?source=html", headers=hdr(), json=body, timeout=30)
+    print(f"  -> POST página {u.status_code}" + ("" if u.status_code == 201 else f" :: {u.text[:300]}"))
+
+
+def retitle_all():
+    BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+    for slug, mt, md in RETITLES:
+        r = httpx.get(f"{GHOST}/ghost/api/admin/posts/slug/{slug}/?fields=id,updated_at,meta_title,meta_description,title",
+                      headers=hdr(), timeout=30)
+        if r.status_code == 404:
+            print(f"\n=== {slug} === NO EXISTE: confirma el slug con _list_ghost_posts.py")
+            continue
+        po = r.json()["posts"][0]
+        (BACKUP_DIR / f"{slug}-{time.strftime('%Y%m%d')}.json").write_text(json.dumps(po, ensure_ascii=False, indent=1), encoding="utf-8")
+        print(f"\n=== {slug} ===\n  OLD: {po.get('meta_title')}\n  NEW: {mt} ({len(mt)})\n  OLD desc: {po.get('meta_description')}\n  NEW desc: {md} ({len(md)})")
+        if DRY:
+            print("  [DRY RUN]"); continue
+        u = httpx.put(f"{GHOST}/ghost/api/admin/posts/{po['id']}/", headers=hdr(), timeout=30,
+                      json={"posts": [{"updated_at": po["updated_at"], "meta_title": mt, "meta_description": md}]})
+        print(f"  -> PUT {u.status_code}" + ("" if u.status_code == 200 else f" :: {u.text[:300]}"))
+
+
+_orig_surgery_put_post = surgery.put_post
+
+
+def _guarded_put_post(slug, old_len):
+    """Envuelve surgery.put_post para abortar si el nuevo cuerpo (lexical) es MAS CORTO
+    que el original -- _ghost_cta_surgery.py no trae ningun guard de este tipo, asi que
+    se añade aqui en tiempo de ejecucion (monkeypatch), sin tocar ese fichero."""
+    def guarded(post_id, body_posts):
+        new_lex = body_posts.get("lexical")
+        if new_lex is not None and old_len and len(new_lex) < old_len:
+            print(f"  ABORT PUT {slug}: nuevo lexical ({len(new_lex)} chars) mas corto que "
+                  f"el original ({old_len} chars) -- no se aplica, revisar a mano.")
+            return False
+        return _orig_surgery_put_post(post_id, body_posts)
+    return guarded
+
+
+def inject_formacion_cta():
+    BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+    surgery.DRY = DRY
+    for slug in CTA_TARGET_SLUGS:
+        try:
+            po = surgery.get_post(slug)
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                print(f"\n=== {slug} === NO EXISTE: confirma el slug con _list_ghost_posts.py")
+                continue
+            raise
+        (BACKUP_DIR / f"{slug}-{time.strftime('%Y%m%d')}.json").write_text(json.dumps(po, ensure_ascii=False, indent=1), encoding="utf-8")
+        print(f"\n=== {slug} ===")
+        old_len = len(po.get("lexical") or "")
+        surgery.put_post = _guarded_put_post(slug, old_len)
+        try:
+            surgery.insert_html_node(slug, "cta-formacion", CTA_FORMACION, "mid")
+        finally:
+            surgery.put_post = _orig_surgery_put_post
+
+
+DRY = "--apply" not in sys.argv
+
+
+def main():
+    print("== 0. página /formacion/ =="); ensure_formacion_page()
+    print("\n== 1. retítulos de las 5 URL en segunda página =="); retitle_all()
+    print("\n== 2. CTA de formación en las guías de Claude Code/.NET =="); inject_formacion_cta()
+
+
+if __name__ == "__main__":
+    main()
