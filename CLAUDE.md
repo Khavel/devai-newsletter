@@ -118,7 +118,7 @@ Task files live in `C:\Users\ceja_\.claude\scheduled-tasks\<task-id>\SKILL.md`.
 
 ## Historial de acciones SEO
 
-- 2026-09-16: script `_ghost_seo_actions_2026_09_16.py` preparado (retítulos de
+- 2026-09-16: **aplicado** `_ghost_seo_actions_2026_09_16.py --apply` (POST 201 + 10 PUT 200, 0 fallos): retítulos de tabnine/bolt/playwright-mcp/v0/mcp-inspector, página `/formacion/` publicada y CTA `cta-formacion` sustituyendo el CTA intermedio de suscripción en 5 guías de Claude Code. Pendientes: `tutoriales-claude-code-aceptar-automaticamente` (sin lexical) y `guias-claude-code` (es page). Backups pre-PUT en `output/backups/2026-09-16-seo-actions/` (checkout principal). Medición: GA4 `utm_campaign=formacion` a D+30; GSC de las 5 URL retituladas a D+14.
   tabnine/bolt/playwright-mcp/v0/mcp-inspector, página `/formacion/`, CTA
   `cta-formacion` en 5 guías; 2 pendientes: tutoriales-claude-code-aceptar-automaticamente
   (sin lexical) y guias-claude-code (es page)); dry-run limpio; `--apply` pendiente de
