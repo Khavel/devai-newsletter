@@ -145,3 +145,4 @@ seo/devai_tweet.txt
 seo/fut_tweet.txt
 seo/stat_tweet_*.txt
 seo/setup_output.txt
+.worktrees/
